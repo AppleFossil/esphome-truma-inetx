@@ -1,175 +1,176 @@
-# Truma iNet X → ESPHome (direkte BLE-Verbindung)
+# Truma iNet X → ESPHome (direct BLE connection)
 
-ESPHome-Komponente für einen **klassischen ESP32**: Der ESP koppelt sich selbst
-mit dem Truma iNet X Panel und hält die Bluetooth-Verbindung dauerhaft. Home Assistant
-spricht nur noch per ESPHome-API über WLAN mit dem ESP.
+🇬🇧 English · 🇩🇪 [Deutsche Version](README.de.md)
 
-Damit entfallen die HA-Integration `truma_inetx` und der Bluetooth-Proxy.
+ESPHome component for a **classic ESP32**: the ESP pairs with the Truma iNet X panel by
+itself and keeps the Bluetooth connection open permanently. Home Assistant only talks to
+the ESP via the ESPHome API over WiFi.
 
-> **Status (0.6.0, November 2026):** Getestet an einem iNet X Pro Panel (Software 3.4.27)
-> mit Combi 6 und Schaudt EBL. Mit einem **klassischen ESP32** (ESP32-D0WD) läuft die
-> Verbindung stabil (Langzeittest: über 18 Stunden ohne Abbruch). Mit dem ESP32-C3 klappt
-> das Wiederverbinden nicht zuverlässig, siehe unten.
+No Home Assistant integration (`truma_inetx`) and no Bluetooth proxy needed.
 
-## Wichtigste Erkenntnisse aus dem Praxistest
+> **Status (0.6.0, November 2026):** Tested with an iNet X Pro panel (software 3.4.27),
+> a Combi 6 heater and a Schaudt EBL. With a **classic ESP32** (ESP32-D0WD) the connection
+> is stable (long-term test: more than 18 hours without a drop). With the ESP32-C3,
+> reconnecting does not work reliably, see below.
 
-1. **Am Panel darf der ESP nur genau einmal in der Geräteliste stehen.** Das Panel legt
-   bei jeder Kopplung einen *neuen* Eintrag an und ersetzt den alten nicht. Stehen zwei
-   Einträge mit derselben MAC drin, verwirft das Bluetooth-Modul des Panels nach ein bis
-   zwei Stunden die Kopplung („Panel rejects this device: pair again“).
-   **Vor jedem Neu-Koppeln alle alten Einträge am Panel löschen.**
-2. **Das Panel nimmt nach einer getrennten Verbindung keine neue an** – weder vom ESP noch
-   von der Truma-App –, bis das Panel stromlos gemacht wurde (Bluetooth-Fehler `0x3e`).
-   Deshalb trennt der ESP ab 0.5.0 eine laufende Verbindung **nie** selbst. Bei Problemen
-   startet er nur die Truma-Sitzung über die bestehende Funkverbindung neu, auch beim
-   Button „Neu verbinden“.
-3. **Jedes Flashen trennt die Verbindung.** Danach: Panel stromlos machen, Einträge am
-   Panel löschen, „Kopplung löschen“, neu koppeln.
-4. Das Panel koppelt immer **ohne Code** („Just Works“). Das Bluetooth-Modul ist ein eigenes
-   Gerät auf dem Truma-Bus (Adresse 0x0601, `BleDeviceManagement`).
-5. Solange der ESP verbunden ist, zeigt das Panel „Zur Kopplung weiterer Geräte bitte andere
-   iNet X Apps schliessen“. Es lässt nur eine App-Verbindung gleichzeitig zu.
-6. Mehrere Geräte melden dieselben Werte (z. B. `AirHeating.Temp`). Ohne `address:` springt
-   der Wert hin und her – Sensoren deshalb immer an ein Gerät binden (Heizung 0x0201,
-   Panel 0x0101, Elektroblock 0x0405).
+## Key findings from real-world testing
 
-### Kopplung Schritt für Schritt
+1. **The ESP must appear exactly once in the panel's device list.** The panel adds a *new*
+   entry on every pairing and does not replace the old one. With two entries for the same
+   MAC address, the panel's Bluetooth module discards the pairing after one or two hours
+   ("Panel rejects this device: pair again").
+   **Always delete all old entries on the panel before pairing again.**
+2. **After a connection has been closed, the panel does not accept a new one** – neither
+   from the ESP nor from the Truma app – until the panel has been power-cycled (Bluetooth
+   error `0x3e`). That is why, since 0.5.0, the ESP **never** closes a working connection
+   itself. If something goes wrong it only restarts the Truma session over the existing
+   radio link, also when you press "Reconnect".
+3. **Every flash closes the connection.** Afterwards: power-cycle the panel, delete the
+   entries on the panel, press "Remove Pairing", pair again.
+4. The panel always pairs **without a code** ("Just Works"). Its Bluetooth module is a
+   separate device on the Truma bus (address 0x0601, `BleDeviceManagement`).
+5. While the ESP is connected, the panel shows "To pair further devices please close other
+   iNet X apps". It only allows one app connection at a time.
+6. Several devices report the same values (e.g. `AirHeating.Temp`). Without `address:` the
+   value flips back and forth – always bind sensors to one device (heater 0x0201,
+   panel 0x0101, power distribution unit 0x0405).
 
-1. Panel stromlos machen und wieder einschalten (nur nötig, wenn vorher eine Verbindung
-   bestand oder geflasht wurde).
-2. Am Panel unter *Verbundene Smartphones* **alle** Einträge des ESP löschen.
-3. In HA „Kopplung löschen“ drücken.
-4. Am Panel „Neues Gerät hinzufügen“ starten, direkt danach in HA „Panel koppeln“.
-5. Kontrollieren: am Panel steht **genau ein** Eintrag mit Bluetooth-Symbol.
+### Pairing step by step
 
-### Diagnose-Sensoren
+1. Power-cycle the panel (only needed if there was a connection before or you just flashed).
+2. On the panel, under *Connected smartphones*, delete **all** entries of the ESP.
+3. In Home Assistant press "Remove Pairing".
+4. On the panel start "Add new device", right after that press "Pair Panel" in Home Assistant.
+5. Check: the panel shows **exactly one** entry with a Bluetooth symbol.
 
-- „Letzte Trennung“: Zeitpunkt, Grund (HCI-Code) und Dauer der letzten Verbindung
-- „BLE freie Plätze“, „BLE-Modul Zustand“: Zustand des Bluetooth-Moduls im Panel
-- „Firmware-Version“: Version dieser Komponente
+### Diagnostic sensors
+
+- "Last Disconnect": time, reason (HCI code) and duration of the last connection
+- "BLE Free Slots", "BLE Module State": state of the panel's Bluetooth module
+- "Firmware Version": version of this component
 
 ---
 
-## Warum das stabiler sein sollte
+## Why this is more stable
 
-Die HA-Integration funktioniert, aber die Verbindung führt über viele Ebenen, die sie
-selbst nicht kontrolliert. Ihre eigene Doku beschreibt die Ursachen:
+The Home Assistant integration works, but the connection runs through many layers it does
+not control. Its own documentation lists the causes:
 
-| Problem mit HA + Proxy | Mit dem dedizierten ESP |
+| Problem with HA + proxy | With the dedicated ESP |
 |---|---|
-| HA wählt **bei jedem Verbindungsaufbau neu**, ob es über den Proxy oder den lokalen Adapter geht. Die Kopplung (Bond) existiert aber nur auf *einem* davon. | Es gibt genau einen Central, und der hat den Bond. |
-| Das Panel nutzt eine **ständig wechselnde Bluetooth-Adresse (RPA)**. Ob der Host die auflösen kann, hängt von Kernel und BlueZ ab (Regression ab Linux 6.19). | Der ESP speichert beim Koppeln den Identitätsschlüssel (IRK) des Panels und löst die Adresse selbst auf (AES, wie in der BT-Spezifikation). |
-| Der Proxy teilt seine Verbindungs-Slots mit anderen BLE-Geräten (Batterie-BMS, Sensoren …). | Der ESP macht nichts anderes. |
-| BlueZ-Schreibzugriffe ohne Timeout, hängende Disconnects, Reload-Probleme in HA. | Jede Stufe hat ihr eigenes Timeout, und der ESP verbindet sich selbstständig neu. |
-| Stromsparen/Neustarts des HA-Hosts unterbrechen die Verbindung. | Der ESP hält die Verbindung auch, wenn HA neu startet. Die Werte sind sofort wieder da. |
+| HA picks **on every connection attempt** whether to use the proxy or the local adapter. But the pairing (bond) exists on only *one* of them. | There is exactly one central, and it holds the bond. |
+| The panel uses a **constantly changing Bluetooth address (RPA)**. Whether the host can resolve it depends on kernel and BlueZ (regression since Linux 6.19). | The ESP stores the panel's identity key (IRK) when pairing and resolves the address itself (AES, as in the Bluetooth specification). |
+| The proxy shares its connection slots with other BLE devices (battery BMS, sensors …). | The ESP does nothing else. |
+| BlueZ writes without timeout, hanging disconnects, reload issues in HA. | Every stage has its own timeout. |
+| Power saving / restarts of the HA host interrupt the connection. | The ESP keeps the connection while HA restarts. The values are back immediately. |
 
-Was bleibt, sind Eigenheiten des **Panels selbst**:
-- Nach einer getrennten Verbindung nimmt das Panel keine neue an, bis es stromlos gemacht
-  wurde (siehe „Wichtigste Erkenntnisse“).
-- Nach einem Neustart ist der interne Bus ca. 90 s „taub“. Der ESP wiederholt automatisch.
+What remains are quirks of the **panel itself**:
+- After a closed connection the panel does not accept a new one until it is power-cycled
+  (see "Key findings").
+- After a restart the internal bus is "deaf" for about 90 s. The ESP retries automatically.
 
 ---
 
 ## Hardware
 
-- **Klassischer ESP32** (ESP32-WROOM / „ESP32 DevKit“, `board: esp32dev`)
+- **Classic ESP32** (ESP32-WROOM / "ESP32 DevKit", `board: esp32dev`)
 
-> **Wichtig:** Mit dem **ESP32-C3** (und vermutlich S3/C6) klappen Koppeln und Datenverbindung,
-> aber **keine Wiederverbindung** nach einem Abbruch. Der Bluetooth-Stack dieser Chips sucht
-> gekoppelte Geräte über die Adressauflösung im Funkchip, und das findet das Panel nicht
-> (gemessen am 14.11.2026). Der klassische ESP32 löst die Adresse in Software auf, genau wie
-> der ESPHome-Bluetooth-Proxy, mit dem die Wiederverbindung laut Original-Projekt funktioniert.
-- USB-Stromversorgung aus dem Bordnetz (12 V → 5 V USB-Adapter)
-- **Platzierung:** möglichst nah am Panel (wenige Meter, Sichtlinie). Entfernung zeigt sich
-  als Verbindungsabbrüche.
-
+> **Important:** With the **ESP32-C3** (and probably S3/C6) pairing and data work, but
+> **reconnecting** after a drop does not. The Bluetooth stack of these chips looks up bonded
+> devices through address resolution in the radio controller, and that does not find the
+> panel (measured on 14 Nov 2026). The classic ESP32 resolves the address in software, just
+> like the ESPHome Bluetooth proxy.
+- USB power from the vehicle's 12 V system (12 V → 5 V USB adapter)
+- **Placement:** as close to the panel as possible (a few metres, line of sight).
 
 ---
 
 ## Installation
 
-1. Im ESPHome Builder ein neues Gerät anlegen und den Inhalt von
-   [`truma-inetx.yaml`](truma-inetx.yaml) hineinkopieren.
-2. Die Secrets eintragen (Vorlage: [`secrets.example.yaml`](secrets.example.yaml)).
-3. Flashen. Voraussetzung: ESPHome ≥ 2025.11 und ein **klassischer ESP32** (`board: esp32dev`).
-   Die Komponente wird von ESPHome automatisch aus diesem Repository geladen
+1. In the ESPHome Builder create a new device and paste the content of
+   [`truma-inetx.en.yaml`](truma-inetx.en.yaml) (English entity names; German:
+   [`truma-inetx.de.yaml`](truma-inetx.de.yaml)).
+2. Fill in the secrets (template: [`secrets.example.yaml`](secrets.example.yaml)).
+3. Flash. Requirements: ESPHome ≥ 2025.11 and a **classic ESP32** (`board: esp32dev`).
+   ESPHome loads the component from this repository automatically
    (`external_components: source: github://Moormerlander/esphome-truma-inetx@main`).
-4. Gerät in Home Assistant hinzufügen (wird automatisch gefunden).
-5. Koppeln wie unter „Kopplung Schritt für Schritt“ beschrieben.
+4. Add the device in Home Assistant (it is discovered automatically).
+5. Pair as described under "Pairing step by step".
 
-### Vorher: alte Verbindung aufräumen
+### Before you start: clean up the old connection
 
-Das Panel speichert nur ca. **4 Bluetooth-Geräte** und lehnt neue ab, wenn die Liste voll ist.
+The panel only stores about **4 Bluetooth devices** and refuses new ones when the list is full.
 
-- HA-Integration „Truma iNet X (BLE)“ in Home Assistant **löschen**. Sonst konkurrieren
-  zwei Centrals um das Panel.
-- In der Truma-App bzw. am Panel die **gespeicherte Geräteliste leeren** (mindestens den
-  alten HA-Eintrag entfernen).
-
----
-
-## Koppeln
-
-1. Panel im **normalen Bildschirm** lassen.
-2. In Home Assistant den Button **„Panel koppeln“** drücken. Der ESP ist jetzt 120 s im
-   Kopplungsmodus (siehe Sensor „Verbindungsstatus“).
-3. **Jetzt** das Panel in den **Gerät-hinzufügen-Modus** setzen (Truma-App oder Panel-Menü).
-4. Warten. Im Log erscheint `Paired with the Truma panel`, danach `Connected`.
-
-Hinweise:
-- Das Panel zeigt am Ende evtl. **„Etwas ist schiefgelaufen“**. Das bezieht sich nur auf
-  den App-Handshake von Truma und kann ignoriert werden. Maßgeblich sind ein grüner Balken
-  über dem Bluetooth-Symbol am Panel und der Sensor „Panel verbunden“.
-- **Auf dem Campingplatz:** Im Kopplungsmodus verbindet sich der ESP nur mit einem Panel,
-  das *ohne Namen* wirbt. Das tut nur ein Panel im Gerät-hinzufügen-Modus. Fremde Panels
-  im Normalbetrieb senden ihren Namen und werden übersprungen. Ein Panel, das die
-  Kopplung verweigert, wird für den Rest des Kopplungsfensters ignoriert.
-- Nach dem Koppeln verbindet sich der ESP **nur noch mit diesem einen Panel**
-  (Adressauflösung über den gespeicherten IRK).
-- Status **„Panel rejects this device: pair again“**: Das Panel hat den ESP vergessen.
-  Geräteliste am Panel leeren und neu koppeln.
+- **Delete** the "Truma iNet X (BLE)" integration in Home Assistant. Otherwise two centrals
+  compete for the panel.
+- **Clear the stored device list** in the Truma app or on the panel (at least remove the old
+  HA entry).
 
 ---
 
-## Konfiguration
+## Pairing
+
+1. Leave the panel on its **normal screen**.
+2. In Home Assistant press **"Pair Panel"**. The ESP is now in pairing mode for 120 s (see
+   sensor "Connection Status").
+3. **Now** put the panel into **add-device mode** (Truma app or panel menu).
+4. Wait. The log shows `Paired with the Truma panel`, then `Connected`.
+
+Notes:
+- At the end the panel may show **"Something went wrong"**. This only refers to Truma's app
+  handshake and can be ignored. What counts is the Bluetooth symbol next to the entry on the
+  panel and the sensor "Panel Connected".
+- **On a campsite:** in pairing mode the ESP only connects to a panel that advertises
+  *without a name*. Only a panel in add-device mode does that. Other panels in normal
+  operation send their name and are skipped. A panel that refuses pairing is ignored for the
+  rest of the pairing window.
+- After pairing, the ESP **only connects to this one panel** (address resolution with the
+  stored IRK).
+- Status **"Panel rejects this device: pair again"**: the panel has forgotten the ESP. Clear
+  the device list on the panel and pair again.
+
+---
+
+## Configuration
 
 ```yaml
 truma_inetx:
   id: truma_hub
-  time_id: ha_time          # optional: Uhrzeit fürs Panel
+  time_id: ha_time          # optional: time for the panel
   user_name: "Home Assistant"
   pairing_timeout: 120s
-  log_parameters: false     # true = jede Wertänderung ins Log
+  log_parameters: false     # true = log every value change
 ```
 
-Der Bus hinter dem Panel ist generisch. Jeder Wert ist `topic` + `param` und kommt von einem
-Gerät mit Busadresse (Panel 0x0101, Heizung 0x0201, Elektroblock 0x04xx, Gasflaschen 0x06xx …).
-Ohne `address:` wird das Gerät genommen, das den Wert zuletzt gemeldet hat. Mit
-`address: 0x0603` legst du es fest, z. B. bei zwei Gasflaschen.
+The bus behind the panel is generic. Every value is a `topic` + `param` and comes from a
+device with a bus address (panel 0x0101, heater 0x0201, power distribution unit 0x04xx,
+gas bottles 0x06xx …). Without `address:` the device that reported the value last is used.
+With `address: 0x0603` you pin it, e.g. with two gas bottles.
 
-**Welche Werte gibt es bei mir?** Button „Alle Parameter ins Log“ drücken. Dann steht
-jeder Parameter jedes Geräts mit aktuellem Wert im Log. Alternativ `log_parameters: true`.
+**Which values do I have?** Press the button "Dump All Parameters to Log". The log then
+lists every parameter of every device with its current value. Alternatively
+`log_parameters: true`.
 
-| Plattform | Optionen |
+| Platform | Options |
 |---|---|
-| `sensor` | `topic`, `param`, `address`. Zahlenwert roh, skalieren mit `filters: - multiply: 0.1`. Listen liefern ihre Länge. |
-| `binary_sensor` | `topic`/`param`/`address` und optional `on_values: [1]` (Standard: alles ≠ 0), **oder** `type: connected \| paired \| pairing_mode` |
-| `text_sensor` | `topic`/`param`/`address` mit optional `format: timer` (Zeitschaltuhr lesbar) **oder** `format: firmware` + `address` (Firmware-Version eines Geräts), **oder** `type: status \| version \| last_disconnect` |
-| `number` | `topic`, `param`, `address`, `min_value`, `max_value`, `step`, `scale` (Anzeige = Wert × scale; Temperaturen: `0.1`) |
+| `sensor` | `topic`, `param`, `address`. Raw number, scale with `filters: - multiply: 0.1`. Lists report their length. |
+| `binary_sensor` | `topic`/`param`/`address` and optionally `on_values: [1]` (default: anything ≠ 0), **or** `type: connected \| paired \| pairing_mode` |
+| `text_sensor` | `topic`/`param`/`address` with optional `format: timer` (readable timer) **or** `format: firmware` + `address` (firmware version of a device), **or** `type: status \| version \| last_disconnect` |
+| `number` | `topic`, `param`, `address`, `min_value`, `max_value`, `step`, `scale` (displayed = value × scale; temperatures: `0.1`) |
 | `select` | `topic`, `param`, `address`, `options: {0: "Eco", 1: "Comfort"}` |
 | `switch` | `topic`, `param`, `address`, `on_value` (1), `off_value` (0) |
-| `button` | `type: pair \| unpair \| reconnect \| dump \| measure \| write` (bei `write`: `topic`, `param`, `value`, `address`) |
-| `climate` | `supported_modes: [HEAT, FAN_ONLY, COOL, AUTO, DRY]`, `appliance_address: 0x0201` (Heizung, deren Werte angezeigt werden) |
+| `button` | `type: pair \| unpair \| reconnect \| dump \| measure \| write` (for `write`: `topic`, `param`, `value`, `address`) |
+| `climate` | `supported_modes: [HEAT, FAN_ONLY, COOL, AUTO, DRY]`, `appliance_address: 0x0201` (heater whose values are shown) |
 
-Die Thermostat-Entität funktioniert so:
-- Der Modus ist `RoomClimate.Mode` am Panel.
-- Die Solltemperatur liegt je nach Modus in `AirHeating.TgtTemp`, `AirCooling.TgtTemp`
-  (Klimaanlage) oder `RoomClimate.TgtTemp` (Auto).
-- Die Isttemperatur ist `AirHeating.Temp`.
+How the thermostat entity works:
+- The mode is `RoomClimate.Mode` on the panel.
+- Depending on the mode, the target temperature is `AirHeating.TgtTemp`, `AirCooling.TgtTemp`
+  (air conditioner) or `RoomClimate.TgtTemp` (auto).
+- The current temperature is `AirHeating.Temp`.
 
-Schreibzugriffe gehen an das Gerät, das den Wert meldet. Nur `RoomClimate` geht ans Panel.
+Writes go to the device that reports the value. Only `RoomClimate` goes to the panel.
 
-### Eigene Aktionen in Home Assistant
+### Custom actions in Home Assistant
 
 ```yaml
 api:
@@ -185,25 +186,25 @@ api:
 
 ---
 
-## Wie es intern funktioniert
+## How it works internally
 
-1. **Finden:** Das Panel wirbt mit der Service-UUID `fc310002-…`. Seine Adresse wechselt
-   ständig. Sie wird gegen den beim Koppeln gespeicherten IRK geprüft.
-2. **Verbinden & verschlüsseln:** Erst Verschlüsselung (Bond), dann Notifications
-   auf CMD und DATA_R. Upstream hat gezeigt: andersherum bricht das Panel ab.
+1. **Find:** the panel advertises the service UUID `fc310002-…`. Its address changes
+   constantly and is checked against the IRK stored when pairing.
+2. **Connect & encrypt:** encryption (bond) first, then notifications on CMD and DATA_R.
+   Upstream showed that the other way round makes the panel abort.
 3. **Session:**
-   - Registrierung (Panel vergibt eine Busadresse)
-   - Topics abonnieren
-   - Identität und Uhrzeit senden
-   - Parameter-Abfrage an jedes Busgerät (nur Panel und Heizung antworten auf Broadcast)
-   - Tankmessung anstoßen
-4. **Halten:** Werte kommen als Push. Tanks werden jede Minute neu gemessen.
-5. **Überwachung:** Kommen 90 s lang keine Daten, wird die Sitzung über die bestehende
-   Funkverbindung neu gestartet. Die Funkverbindung selbst trennt der ESP nie.
+   - registration (the panel assigns a bus address)
+   - subscribe to topics
+   - send identity and time
+   - parameter request to every bus device (only panel and heater answer a broadcast)
+   - trigger tank measurement
+4. **Keep alive:** values arrive as push messages. Tanks are measured every minute.
+5. **Watchdog:** if no data arrives for 90 s, the session is restarted over the existing
+   radio link. The ESP never closes the radio link itself.
 
-Transport: Jede Nachricht läuft über `InitDataTransfer → Ready → Daten → DataAck`.
-Bleibt ein Ack aus, wird die Sitzung neu gestartet. Das Ack trägt keine Kennung,
-deshalb wäre die Zuordnung danach nicht mehr sicher (upstream gemessen).
+Transport: every message goes through `InitDataTransfer → Ready → Data → DataAck`.
+If an ack is missing, the session is restarted. The ack carries no identifier, so matching
+would no longer be reliable afterwards (measured upstream).
 
 ---
 
@@ -212,37 +213,37 @@ deshalb wäre die Zuordnung danach nicht mehr sicher (upstream gemessen).
 ```bash
 cd tests
 g++ -std=c++17 -I../components/truma_inetx test_core.cpp ../components/truma_inetx/truma_core.cpp -lcrypto -o test_core
-./test_core        # -v für ausführliches Log
+./test_core        # -v for a verbose log
 ```
 
-Was die Tests abdecken:
-- CBOR (RFC-8949-Testvektoren)
-- Frame-Aufbau (byte-identisch zur Python-Referenz)
-- RPA-Auflösung (Testvektor aus der Bluetooth-Spezifikation)
-- eine komplette Session gegen ein simuliertes Panel: fragmentierte Antworten bei MTU 23,
-  Geräte ohne Ack, Schreiben mit Echo, abgelehnte Writes, Stall-Watchdog, verirrte
-  Ready/Ack-Pakete
+What the tests cover:
+- CBOR (RFC 8949 test vectors)
+- frame building (byte-identical to the Python reference)
+- RPA resolution (test vector from the Bluetooth specification)
+- a complete session against a simulated panel: fragmented replies at MTU 23, devices
+  without ack, writes with echo, rejected writes, stall watchdog, stray Ready/Ack packets
 
 ---
 
-## Bei Problemen
+## Troubleshooting
 
-- Log-Level `DEBUG` (oder `logs: { truma_inetx: VERBOSE }`). Der Sensor „Verbindungsstatus“
-  zeigt die aktuelle Stufe.
-- Dauerhaft Status 0x3E / `connect failed` nach einer Trennung oder nach dem Flashen:
-  Panel stromlos machen, dann neu koppeln (siehe „Kopplung Schritt für Schritt“).
-- `the panel assigned no address` direkt nach Panel-Neustart: normal, verschwindet nach ca. 1–2 Minuten.
+- Log level `DEBUG` (or `logs: { truma_inetx: VERBOSE }`). The sensor "Connection Status"
+  shows the current stage.
+- Permanent status 0x3E / `connect failed` after a disconnect or after flashing:
+  power-cycle the panel, then pair again (see "Pairing step by step").
+- `the panel assigned no address` right after a panel restart: normal, goes away after
+  about 1–2 minutes.
 
 ---
 
-## Lizenz & Dank
+## License & thanks
 
-- Protokollwissen und Messungen: [rpodgorny/hass-truma-inetx](https://github.com/rpodgorny/hass-truma-inetx) (GPL-3.0)
-- Ursprüngliches Reverse Engineering: [daaaaan/truma-inetx-ble](https://github.com/daaaaan/truma-inetx-ble)
+- Protocol knowledge and measurements: [rpodgorny/hass-truma-inetx](https://github.com/rpodgorny/hass-truma-inetx) (GPL-3.0)
+- Original reverse engineering: [daaaaan/truma-inetx-ble](https://github.com/daaaaan/truma-inetx-ble)
 
-Der C++-Code ist eine Neuimplementierung, es wurde kein Code aus dem unlizenzierten
-Upstream-Protokollmodul übernommen. Weil Logik und Messwissen aus dem GPL-Projekt stammen,
-sollte dieses Projekt ebenfalls unter **GPL-3.0** veröffentlicht werden.
+The C++ code is a reimplementation; no code was taken from the unlicensed upstream protocol
+module. Because logic and measurements come from the GPL project, this project is released
+under **GPL-3.0** as well.
 
-„Truma“ und „iNet X“ sind Marken der Truma Gerätetechnik GmbH & Co. KG. Dieses Projekt ist
-nicht mit Truma verbunden.
+"Truma" and "iNet X" are trademarks of Truma Gerätetechnik GmbH & Co. KG. This project is
+not affiliated with Truma.
