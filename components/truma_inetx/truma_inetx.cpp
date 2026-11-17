@@ -227,6 +227,7 @@ void TrumaInetX::dump_config() {
   ESP_LOGCONFIG(TAG, "  App MUID: %s", this->session_.identity.muid.c_str());
   ESP_LOGCONFIG(TAG, "  Pairing window: %us", static_cast<unsigned>(this->pairing_timeout_ / 1000));
   ESP_LOGCONFIG(TAG, "  LE privacy: %s", YESNO(this->privacy_));
+  ESP_LOGCONFIG(TAG, "  Language: %s", this->german_ ? "de" : "en");
   ESP_LOGCONFIG(TAG, "  Bonded panels: %u (name '%s')", static_cast<unsigned>(this->bonds_.size()),
                 this->panel_name_.c_str());
   for (auto &b : this->bonds_) {
@@ -925,29 +926,31 @@ void TrumaInetX::record_disconnect_(uint8_t hci_reason) {
   const char *why;
   switch (hci_reason) {
     case 0x08:
-      why = "Funk-Timeout (Panel nicht mehr erreichbar)";
+      why = tr("radio timeout (panel out of reach)", "Funk-Timeout (Panel nicht mehr erreichbar)");
       break;
     case 0x13:
-      why = "vom Panel beendet";
+      why = tr("closed by the panel", "vom Panel beendet");
       break;
     case 0x16:
-      why = "vom ESP beendet";
+      why = tr("closed by the ESP", "vom ESP beendet");
       break;
     case 0x22:
-      why = "Panel antwortet nicht (LL timeout)";
+      why = tr("panel does not answer (LL timeout)", "Panel antwortet nicht (LL timeout)");
       break;
     case 0x3D:
-      why = "Verschluesselungsfehler (MIC)";
+      why = tr("encryption error (MIC)", "Verschluesselungsfehler (MIC)");
       break;
     default:
-      why = "anderer Grund";
+      why = tr("other reason", "anderer Grund");
       break;
   }
   const uint32_t mins = (millis() - this->session_since_) / 60000;
   char buf[160];
-  snprintf(buf, sizeof(buf), "%s: %s (0x%02X), nach %u h %02u min, %u Neustarts der Sitzung", this->now_text_().c_str(),
-           why, hci_reason, static_cast<unsigned>(mins / 60), static_cast<unsigned>(mins % 60),
-           static_cast<unsigned>(this->soft_restarts_));
+  snprintf(buf, sizeof(buf),
+           tr("%s: %s (0x%02X), after %u h %02u min, %u session restarts",
+              "%s: %s (0x%02X), nach %u h %02u min, %u Neustarts der Sitzung"),
+           this->now_text_().c_str(), why, hci_reason, static_cast<unsigned>(mins / 60),
+           static_cast<unsigned>(mins % 60), static_cast<unsigned>(this->soft_restarts_));
   this->last_disconnect_ = buf;
   ESP_LOGW(TAG, "Link lost: %s", buf);
   this->notify_status_();
@@ -979,43 +982,48 @@ bool TrumaInetX::write_param_text(const std::string &topic, const std::string &p
 void TrumaInetX::update_status_() {
   const uint32_t now = millis();
   std::string s;
+  bool countdown = false;
   if (!this->ble_ready_done_) {
-    s = "Bluetooth starting";
+    s = tr("Bluetooth starting", "Bluetooth startet");
   } else {
     switch (this->link_) {
       case Link::NO_BLE:
-        s = "Bluetooth starting";
+        s = tr("Bluetooth starting", "Bluetooth startet");
         break;
       case Link::WAIT_ADV:
         if (this->pairing_) {
-          char buf[96];
-          snprintf(buf, sizeof(buf), "Pairing mode (%us left): set the panel to add-device mode",
+          char buf[112];
+          snprintf(buf, sizeof(buf),
+                   tr("Pairing mode (%us left): set the panel to add-device mode",
+                      "Kopplungsmodus (noch %us): Panel auf \"Neues Geraet hinzufuegen\" stellen"),
                    static_cast<unsigned>((this->pairing_until_ - now) / 1000));
           s = buf;
+          countdown = true;
         } else if (this->bonds_.empty()) {
-          s = "Not paired";
+          s = tr("Not paired", "Nicht gekoppelt");
         } else if (this->auth_failures_ >= 3) {
-          s = "Panel rejects this device: pair again";
+          s = tr("Panel rejects this device: pair again", "Panel lehnt den ESP ab: neu koppeln");
         } else if (static_cast<int32_t>(now - this->next_connect_ok_) < 0) {
-          s = "Waiting to reconnect";
+          s = tr("Waiting to reconnect", "Warte auf neuen Verbindungsversuch");
         } else {
-          s = "Searching for panel";
+          s = tr("Searching for panel", "Suche Panel");
         }
         break;
       case Link::CONNECTING:
-        s = this->pairing_ ? "Pairing: connecting" : "Connecting";
+        s = this->pairing_ ? tr("Pairing: connecting", "Kopplung: verbinde") : tr("Connecting", "Verbinde");
         break;
       case Link::ENCRYPTING:
-        s = this->pairing_ ? "Pairing: bonding" : "Encrypting";
+        s = this->pairing_ ? tr("Pairing: bonding", "Kopplung: tausche Schluessel")
+                           : tr("Encrypting", "Verschluessele");
         break;
       case Link::SUBSCRIBING:
-        s = "Subscribing";
+        s = tr("Subscribing", "Abonniere");
         break;
       case Link::SESSION:
         if (this->session_.running()) {
-          s = "Connected";
+          s = tr("Connected", "Verbunden");
         } else {
-          s = std::string("Starting session (") + this->session_.state_name() + ")";
+          s = std::string(tr("Starting session (", "Starte Sitzung (")) + this->session_state_text_() + ")";
         }
         break;
     }
@@ -1025,12 +1033,26 @@ void TrumaInetX::update_status_() {
   if (!changed)
     return;
   // The pairing countdown changes every second; only report it every 10 s.
-  if (s != this->status_ && this->pairing_ && this->link_ == Link::WAIT_ADV && !this->status_.empty() &&
-      this->status_.compare(0, 7, "Pairing") == 0 && ((this->pairing_until_ - now) / 1000) % 10 != 0 &&
-      this->last_pairing_ == this->pairing_)
+  if (s != this->status_ && countdown && this->status_is_countdown_ &&
+      ((this->pairing_until_ - now) / 1000) % 10 != 0 && this->last_pairing_ == this->pairing_)
     return;
   this->status_ = s;
+  this->status_is_countdown_ = countdown;
   this->notify_status_();
+}
+
+const char *TrumaInetX::session_state_text_() const {
+  const char *en = this->session_.state_name();
+  if (!this->german_)
+    return en;
+  static const char *const MAP[][2] = {{"registering", "Anmeldung"},  {"subscribing", "Abonnieren"},
+                                       {"identifying", "Identifizieren"}, {"discovering", "Parameter abfragen"},
+                                       {"measuring", "Messen"},        {"running", "laeuft"},
+                                       {"idle", "inaktiv"},            {"failed", "Fehler"}};
+  for (auto &m : MAP)
+    if (strcmp(m[0], en) == 0)
+      return m[1];
+  return en;
 }
 
 void TrumaInetX::notify_status_() {

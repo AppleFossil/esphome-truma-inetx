@@ -116,7 +116,7 @@ class TrumaTextSensor : public text_sensor::TextSensor, public TrumaListener {
     std::string out;
     switch (this->format_) {
       case TEXT_TIMER:
-        out = format_timer(v);
+        out = format_timer(v, this->parent_->german());
         break;
       case TEXT_FIRMWARE:
         out = this->format_firmware_(src);
@@ -142,7 +142,7 @@ class TrumaTextSensor : public text_sensor::TextSensor, public TrumaListener {
 
   // TimerConfig.TimerN: {"id","name","symbol","start","end","wd":[7 x 0/1]}.
   // wd is taken as Monday..Sunday.
-  static std::string format_timer(const truma_inetx_proto::CborValue &v) {
+  static std::string format_timer(const truma_inetx_proto::CborValue &v, bool german) {
     using truma_inetx_proto::CborValue;
     if (v.type != CborValue::MAP)
       return v.to_string();
@@ -154,7 +154,7 @@ class TrumaTextSensor : public text_sensor::TextSensor, public TrumaListener {
     const bool unused = (id == nullptr || (id->is_number() && id->as_int() == 0)) &&
                         (name == nullptr || (name->type == CborValue::TEXT && name->s == "DefaultTimer"));
     if (unused)
-      return "nicht eingerichtet";
+      return german ? "nicht eingerichtet" : "not set up";
     std::string out;
     if (name != nullptr && name->type == CborValue::TEXT && !name->s.empty())
       out = name->s + ": ";
@@ -162,7 +162,9 @@ class TrumaTextSensor : public text_sensor::TextSensor, public TrumaListener {
     out += "-";
     out += (end != nullptr && end->type == CborValue::TEXT) ? end->s : "?";
     if (wd != nullptr && wd->type == CborValue::ARRAY) {
-      static const char *const DAYS[7] = {"Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"};
+      static const char *const DAYS_DE[7] = {"Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"};
+      static const char *const DAYS_EN[7] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+      const char *const *DAYS = german ? DAYS_DE : DAYS_EN;
       std::string days;
       int n = 0;
       for (size_t k = 0; k < wd->items.size() && k < 7; k++) {
@@ -173,7 +175,7 @@ class TrumaTextSensor : public text_sensor::TextSensor, public TrumaListener {
           n++;
         }
       }
-      out += n == 7 ? ", taeglich" : n == 0 ? ", keine Tage" : ", " + days;
+      out += n == 7 ? (german ? ", taeglich" : ", daily") : n == 0 ? (german ? ", keine Tage" : ", no days") : ", " + days;
     }
     return out;
   }

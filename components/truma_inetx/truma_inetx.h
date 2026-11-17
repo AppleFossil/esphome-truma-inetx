@@ -100,6 +100,10 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   void set_pairing_timeout(uint32_t ms) { this->pairing_timeout_ = ms; }
   void set_log_parameters(bool b) { this->session_.log_params = b; }
   void set_privacy(bool b) { this->privacy_ = b; }
+  void set_german(bool b) { this->german_ = b; }
+  bool german() const { return this->german_; }
+  // Pick the text for the configured language.
+  const char *tr(const char *en, const char *de) const { return this->german_ ? de : en; }
 #ifdef USE_TIME
   void set_time(time::RealTimeClock *t) { this->time_ = t; }
 #endif
@@ -171,6 +175,7 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   void soft_restart_(const char *reason);
   void record_disconnect_(uint8_t hci_reason);
   std::string now_text_();
+  const char *session_state_text_() const;
   void drop_link_(const char *reason);
   void update_status_();
   void notify_status_();
@@ -188,6 +193,8 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   std::vector<Bond> bonds_;
   bool pairing_{false};
   bool privacy_{false};
+  bool german_{false};
+  bool status_is_countdown_{false};
   std::string last_disconnect_{"-"};
   bool soft_restart_pending_{false};
   uint32_t soft_restarts_{0};

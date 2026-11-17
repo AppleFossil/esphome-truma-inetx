@@ -142,6 +142,7 @@ truma_inetx:
   user_name: "Home Assistant"
   pairing_timeout: 120s
   log_parameters: false     # true = jede Wertänderung ins Log
+  language: de              # en | de: Sprache von Status, „Letzte Trennung“ und Zeitschaltuhren
 ```
 
 Der Bus hinter dem Panel ist generisch. Jeder Wert ist `topic` + `param` und kommt von einem

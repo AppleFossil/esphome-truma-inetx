@@ -58,6 +58,7 @@ truma_inetx:
   time_id: ha_time
   user_name: "Home Assistant"
   pairing_timeout: 120s
+  language: de              # Sprache der Statustexte
   privacy: false
 
 binary_sensor:

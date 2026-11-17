@@ -140,6 +140,7 @@ truma_inetx:
   user_name: "Home Assistant"
   pairing_timeout: 120s
   log_parameters: false     # true = log every value change
+  language: en              # en | de: language of status, "Last Disconnect" and timer texts
 ```
 
 The bus behind the panel is generic. Every value is a `topic` + `param` and comes from a
