@@ -22,6 +22,7 @@ CONF_PAIRING_TIMEOUT = "pairing_timeout"
 CONF_LOG_PARAMETERS = "log_parameters"
 CONF_PRIVACY = "privacy"
 CONF_LANGUAGE = "language"
+CONF_SUPERVISION_TIMEOUT = "supervision_timeout"
 CONF_TOPIC = "topic"
 CONF_PARAM = "param"
 CONF_ADDRESS = "address"
@@ -49,6 +50,12 @@ _SCHEMA = (
             cv.Optional(CONF_PRIVACY, default=False): cv.boolean,
             # Language of the texts the ESP produces (status, last disconnect, timers).
             cv.Optional(CONF_LANGUAGE, default="en"): cv.one_of("en", "de", lower=True),
+            # How long the BLE link survives without hearing the panel. Longer
+            # rides out WiFi/BLE coexistence gaps (max 32 s by the BLE spec).
+            cv.Optional(CONF_SUPERVISION_TIMEOUT, default="20s"): cv.All(
+                cv.positive_time_period_milliseconds,
+                cv.Range(min=cv.TimePeriod(seconds=2), max=cv.TimePeriod(seconds=32)),
+            ),
             cv.Optional(CONF_TIME_ID): cv.use_id(time_.RealTimeClock),
         }
     )
@@ -133,6 +140,7 @@ async def to_code(config):
     cg.add(var.set_log_parameters(config[CONF_LOG_PARAMETERS]))
     cg.add(var.set_privacy(config[CONF_PRIVACY]))
     cg.add(var.set_german(config[CONF_LANGUAGE] == "de"))
+    cg.add(var.set_supervision_timeout(config[CONF_SUPERVISION_TIMEOUT]))
     if CONF_TIME_ID in config:
         rtc = await cg.get_variable(config[CONF_TIME_ID])
         cg.add(var.set_time(rtc))

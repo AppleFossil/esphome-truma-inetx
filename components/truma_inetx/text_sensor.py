@@ -9,7 +9,7 @@ DEPENDENCIES = ["truma_inetx"]
 
 TrumaTextSensor = truma_ns.class_("TrumaTextSensor", text_sensor.TextSensor)
 
-STATUS_TYPES = {"status": 4, "version": 6, "last_disconnect": 7}
+STATUS_TYPES = {"status": 4, "version": 6, "last_disconnect": 7, "link_params": 8}
 
 CONF_FORMAT = "format"
 # raw: value as text; timer: TimerConfig.TimerN as "07:00-09:00, Mo Di";

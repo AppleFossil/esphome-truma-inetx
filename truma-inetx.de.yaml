@@ -180,6 +180,10 @@ text_sensor:
     name: "Letzte Trennung"
     entity_category: diagnostic
   - platform: truma_inetx
+    type: link_params
+    name: "Funkverbindung"
+    entity_category: diagnostic
+  - platform: truma_inetx
     type: status
     name: "Verbindungsstatus"
     entity_category: diagnostic

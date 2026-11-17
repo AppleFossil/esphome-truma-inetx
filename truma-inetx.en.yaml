@@ -180,6 +180,10 @@ text_sensor:
     name: "Last Disconnect"
     entity_category: diagnostic
   - platform: truma_inetx
+    type: link_params
+    name: "Radio Link"
+    entity_category: diagnostic
+  - platform: truma_inetx
     type: status
     name: "Connection Status"
     entity_category: diagnostic

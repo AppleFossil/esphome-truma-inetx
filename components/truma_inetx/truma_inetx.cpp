@@ -211,6 +211,7 @@ void TrumaInetX::setup() {
     this->auth_failures_ = 0;
     this->session_was_running_ = true;
     ESP_LOGI(TAG, "Connected to the Truma panel (bus address 0x%04X)", this->session_.assigned_addr());
+    this->request_robust_conn_params_();
     for (auto *l : this->listeners_)
       l->refresh();
     this->notify_status_();
@@ -228,6 +229,7 @@ void TrumaInetX::dump_config() {
   ESP_LOGCONFIG(TAG, "  Pairing window: %us", static_cast<unsigned>(this->pairing_timeout_ / 1000));
   ESP_LOGCONFIG(TAG, "  LE privacy: %s", YESNO(this->privacy_));
   ESP_LOGCONFIG(TAG, "  Language: %s", this->german_ ? "de" : "en");
+  ESP_LOGCONFIG(TAG, "  Supervision timeout: %u ms", static_cast<unsigned>(this->supervision_timeout_ms_));
   ESP_LOGCONFIG(TAG, "  Bonded panels: %u (name '%s')", static_cast<unsigned>(this->bonds_.size()),
                 this->panel_name_.c_str());
   for (auto &b : this->bonds_) {
@@ -883,6 +885,49 @@ void TrumaInetX::reconnect() {
   } else if (this->link_ != Link::WAIT_ADV && this->link_ != Link::NO_BLE) {
     this->drop_link_("reconnect requested");
   }
+}
+
+void TrumaInetX::request_robust_conn_params_() {
+  if (this->link_ != Link::SESSION)
+    return;
+  // Keep the interval ESPHome connects with (8.75-11.25 ms): the panel rejects
+  // longer ones (status 14, "unacceptable connection interval"). Only the
+  // supervision timeout is raised. ESPHome logs a rejection as
+  // "Conn param update failed"; success is only logged at VERBOSE level
+  // ("Conn params updated", logger: logs: esp32_ble: VERBOSE).
+  esp_ble_conn_update_params_t p = {};
+  memcpy(p.bda, this->client_->get_remote_bda(), sizeof(esp_bd_addr_t));
+  p.min_int = 0x07;
+  p.max_int = 0x09;
+  p.latency = 0;
+  p.timeout = static_cast<uint16_t>(this->supervision_timeout_ms_ / 10);
+  ESP_LOGI(TAG, "Requesting supervision timeout %u ms (interval 8.75-11.25 ms)",
+           static_cast<unsigned>(this->supervision_timeout_ms_));
+  esp_err_t err = esp_ble_gap_update_conn_params(&p);
+  if (err != ESP_OK)
+    ESP_LOGW(TAG, "esp_ble_gap_update_conn_params failed: %d", err);
+  // ESPHome does not pass the result on to components: read back what is in use.
+  this->set_timeout("link_params", 5000, [this]() { this->read_link_params_(); });
+}
+
+void TrumaInetX::read_link_params_() {
+  if (this->link_ != Link::SESSION)
+    return;
+  esp_gap_conn_params_t cp{};
+  esp_bd_addr_t bda;
+  memcpy(bda, this->client_->get_remote_bda(), sizeof(esp_bd_addr_t));
+  if (esp_ble_get_current_conn_params(bda, &cp) != ESP_OK) {
+    ESP_LOGW(TAG, "Could not read the link parameters");
+    return;
+  }
+  char buf[96];
+  snprintf(buf, sizeof(buf), tr("interval %.2f ms, latency %u, timeout %.1f s", "Intervall %.2f ms, Latenz %u, Timeout %.1f s"),
+           cp.interval * 1.25f, static_cast<unsigned>(cp.latency), cp.timeout / 100.0f);
+  this->link_params_ = buf;
+  ESP_LOGI(TAG, "Link parameters in use: %s", buf);
+  if (static_cast<uint32_t>(cp.timeout) * 10u + 500u < this->supervision_timeout_ms_)
+    ESP_LOGW(TAG, "The panel did not accept the longer supervision timeout");
+  this->notify_status_();
 }
 
 void TrumaInetX::soft_restart_(const char *reason) {

@@ -66,6 +66,7 @@ enum StatusType : uint8_t {
   STATUS_TEXT = 4,
   STATUS_VERSION = 6,
   STATUS_LAST_DISCONNECT = 7,
+  STATUS_LINK_PARAMS = 8,
 };
 
 // The ESPHome BLE client, kept thin: it only decides which advertisement to
@@ -101,6 +102,7 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   void set_log_parameters(bool b) { this->session_.log_params = b; }
   void set_privacy(bool b) { this->privacy_ = b; }
   void set_german(bool b) { this->german_ = b; }
+  void set_supervision_timeout(uint32_t ms) { this->supervision_timeout_ms_ = ms; }
   bool german() const { return this->german_; }
   // Pick the text for the configured language.
   const char *tr(const char *en, const char *de) const { return this->german_ ? de : en; }
@@ -129,6 +131,7 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   bool is_pairing() const { return this->pairing_; }
   const std::string &status_text() const { return this->status_; }
   const std::string &last_disconnect() const { return this->last_disconnect_; }
+  const std::string &link_params() const { return this->link_params_; }
 
   // --- called by TrumaBleClient ------------------------------------------
   bool accept_advertisement(const espbt::ESPBTDevice &device);
@@ -173,6 +176,9 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   // accept a new connection after a disconnect until it is power-cycled, so
   // the ESP never drops a working link on its own.
   void soft_restart_(const char *reason);
+  // Ask for a longer supervision timeout once the session runs.
+  void request_robust_conn_params_();
+  void read_link_params_();
   void record_disconnect_(uint8_t hci_reason);
   std::string now_text_();
   const char *session_state_text_() const;
@@ -194,8 +200,10 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   bool pairing_{false};
   bool privacy_{false};
   bool german_{false};
+  uint32_t supervision_timeout_ms_{20000};
   bool status_is_countdown_{false};
   std::string last_disconnect_{"-"};
+  std::string link_params_{"-"};
   bool soft_restart_pending_{false};
   uint32_t soft_restarts_{0};
   uint32_t session_since_{0};

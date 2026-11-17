@@ -187,6 +187,8 @@ class TrumaTextSensor : public text_sensor::TextSensor, public TrumaListener {
       this->publish_state(TRUMA_INETX_VERSION);
     else if (this->status_type_ == STATUS_LAST_DISCONNECT && this->state != this->parent_->last_disconnect())
       this->publish_state(this->parent_->last_disconnect());
+    else if (this->status_type_ == STATUS_LINK_PARAMS && this->state != this->parent_->link_params())
+      this->publish_state(this->parent_->link_params());
   }
 
  protected:

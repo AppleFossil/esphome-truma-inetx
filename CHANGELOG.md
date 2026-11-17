@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.3
+- The panel rejects connection intervals of 30-50 ms ("unacceptable connection interval").
+  The ESP now keeps ESPHome's interval (8.75-11.25 ms) and only raises the supervision timeout.
+- New diagnostic sensor `type: link_params` ("Radio Link"): interval, latency and supervision
+  timeout actually in use, read back from the Bluetooth stack.
+
+## 0.6.2
+- After connecting, the ESP asks for a supervision timeout of 20 s (new option
+  `supervision_timeout`). Previously the link dropped after 8 s without a packet.
+
 ## 0.6.1
 - New option `language: en | de` for the texts the ESP produces (connection status,
   "Last Disconnect", timer schedules). The German example YAML sets `de`, the English one `en`.

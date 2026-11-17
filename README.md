@@ -48,6 +48,7 @@ No Home Assistant integration (`truma_inetx`) and no Bluetooth proxy needed.
 - "Last Disconnect": time, reason (HCI code) and duration of the last connection
 - "BLE Free Slots", "BLE Module State": state of the panel's Bluetooth module
 - "Firmware Version": version of this component
+- "Radio Link": connection interval and supervision timeout actually in use
 
 ---
 
@@ -141,6 +142,7 @@ truma_inetx:
   pairing_timeout: 120s
   log_parameters: false     # true = log every value change
   language: en              # en | de: language of status, "Last Disconnect" and timer texts
+  supervision_timeout: 20s  # how long the link survives without hearing the panel (2-32 s)
 ```
 
 The bus behind the panel is generic. Every value is a `topic` + `param` and comes from a
@@ -156,7 +158,7 @@ lists every parameter of every device with its current value. Alternatively
 |---|---|
 | `sensor` | `topic`, `param`, `address`. Raw number, scale with `filters: - multiply: 0.1`. Lists report their length. |
 | `binary_sensor` | `topic`/`param`/`address` and optionally `on_values: [1]` (default: anything ≠ 0), **or** `type: connected \| paired \| pairing_mode` |
-| `text_sensor` | `topic`/`param`/`address` with optional `format: timer` (readable timer) **or** `format: firmware` + `address` (firmware version of a device), **or** `type: status \| version \| last_disconnect` |
+| `text_sensor` | `topic`/`param`/`address` with optional `format: timer` (readable timer) **or** `format: firmware` + `address` (firmware version of a device), **or** `type: status \| version \| last_disconnect \| link_params` |
 | `number` | `topic`, `param`, `address`, `min_value`, `max_value`, `step`, `scale` (displayed = value × scale; temperatures: `0.1`) |
 | `select` | `topic`, `param`, `address`, `options: {0: "Eco", 1: "Comfort"}` |
 | `switch` | `topic`, `param`, `address`, `on_value` (1), `off_value` (0) |
@@ -230,6 +232,10 @@ What the tests cover:
 
 - Log level `DEBUG` (or `logs: { truma_inetx: VERBOSE }`). The sensor "Connection Status"
   shows the current stage.
+- "Last Disconnect" shows a radio timeout (0x08): the ESP32 shares one radio between WiFi
+  and Bluetooth. Set a **fixed WiFi channel** on your router (automatic channel changes make
+  the ESP rescan), or use an ESP32 board with Ethernet (e.g. WT32-ETH01, Olimex ESP32-POE)
+  so Bluetooth has the radio to itself.
 - Permanent status 0x3E / `connect failed` after a disconnect or after flashing:
   power-cycle the panel, then pair again (see "Pairing step by step").
 - `the panel assigned no address` right after a panel restart: normal, goes away after

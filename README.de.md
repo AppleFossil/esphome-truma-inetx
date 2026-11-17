@@ -49,6 +49,7 @@ Damit entfallen die HA-Integration `truma_inetx` und der Bluetooth-Proxy.
 - „Letzte Trennung“: Zeitpunkt, Grund (HCI-Code) und Dauer der letzten Verbindung
 - „BLE freie Plätze“, „BLE-Modul Zustand“: Zustand des Bluetooth-Moduls im Panel
 - „Firmware-Version“: Version dieser Komponente
+- „Funkverbindung“: tatsächlich verwendetes Verbindungsintervall und Funk-Timeout
 
 ---
 
@@ -143,6 +144,7 @@ truma_inetx:
   pairing_timeout: 120s
   log_parameters: false     # true = jede Wertänderung ins Log
   language: de              # en | de: Sprache von Status, „Letzte Trennung“ und Zeitschaltuhren
+  supervision_timeout: 20s  # so lange überlebt die Verbindung ohne Lebenszeichen vom Panel (2–32 s)
 ```
 
 Der Bus hinter dem Panel ist generisch. Jeder Wert ist `topic` + `param` und kommt von einem
@@ -157,7 +159,7 @@ jeder Parameter jedes Geräts mit aktuellem Wert im Log. Alternativ `log_paramet
 |---|---|
 | `sensor` | `topic`, `param`, `address`. Zahlenwert roh, skalieren mit `filters: - multiply: 0.1`. Listen liefern ihre Länge. |
 | `binary_sensor` | `topic`/`param`/`address` und optional `on_values: [1]` (Standard: alles ≠ 0), **oder** `type: connected \| paired \| pairing_mode` |
-| `text_sensor` | `topic`/`param`/`address` mit optional `format: timer` (Zeitschaltuhr lesbar) **oder** `format: firmware` + `address` (Firmware-Version eines Geräts), **oder** `type: status \| version \| last_disconnect` |
+| `text_sensor` | `topic`/`param`/`address` mit optional `format: timer` (Zeitschaltuhr lesbar) **oder** `format: firmware` + `address` (Firmware-Version eines Geräts), **oder** `type: status \| version \| last_disconnect \| link_params` |
 | `number` | `topic`, `param`, `address`, `min_value`, `max_value`, `step`, `scale` (Anzeige = Wert × scale; Temperaturen: `0.1`) |
 | `select` | `topic`, `param`, `address`, `options: {0: "Eco", 1: "Comfort"}` |
 | `switch` | `topic`, `param`, `address`, `on_value` (1), `off_value` (0) |
@@ -232,6 +234,10 @@ Was die Tests abdecken:
 
 - Log-Level `DEBUG` (oder `logs: { truma_inetx: VERBOSE }`). Der Sensor „Verbindungsstatus“
   zeigt die aktuelle Stufe.
+- „Letzte Trennung“ zeigt einen Funk-Timeout (0x08): Der ESP32 teilt sich ein Funkteil
+  zwischen WLAN und Bluetooth. Im Router einen **festen WLAN-Kanal** einstellen (automatische
+  Kanalwechsel lassen den ESP neu suchen) oder ein ESP32-Board mit LAN verwenden
+  (z. B. WT32-ETH01, Olimex ESP32-POE), dann hat Bluetooth das Funkteil für sich allein.
 - Dauerhaft Status 0x3E / `connect failed` nach einer Trennung oder nach dem Flashen:
   Panel stromlos machen, dann neu koppeln (siehe „Kopplung Schritt für Schritt“).
 - `the panel assigned no address` direkt nach Panel-Neustart: normal, verschwindet nach ca. 1–2 Minuten.
