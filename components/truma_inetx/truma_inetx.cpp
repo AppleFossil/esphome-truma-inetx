@@ -1090,6 +1090,11 @@ void TrumaInetX::record_disconnect_(uint8_t hci_reason) {
   this->notify_status_();
 }
 
+void TrumaInetX::log_raw(uint32_t ms) {
+  ESP_LOGI(TAG, "Logging every parameter message in full for %u s", static_cast<unsigned>(ms / 1000));
+  this->session_.log_raw_for(ms);
+}
+
 void TrumaInetX::dump_bus() {
   ESP_LOGI(TAG, "Bus dump (%u devices):", static_cast<unsigned>(this->session_.bus.devices.size()));
   for (auto &d : this->session_.bus.devices) {

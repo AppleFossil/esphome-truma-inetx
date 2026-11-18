@@ -8,10 +8,14 @@ the ESP via the ESPHome API over WiFi.
 
 No Home Assistant integration (`truma_inetx`) and no Bluetooth proxy needed.
 
-> **Status (0.6.5, November 2026):** Tested with an iNet X Pro panel (software 3.4.27),
-> a Combi 6 heater and a Schaudt EBL. With a **classic ESP32** (ESP32-D0WD) the connection
-> is stable (long-term test: 30 hours without a drop, test with 0.6.5 running). With the
-> ESP32-C3, reconnecting does not work reliably, see below.
+> **Status: public beta 0.7.0 (November 2026) – testers wanted!**
+> Tested with an iNet X Pro panel (software 3.4.27), a Combi 6 heater and a Schaudt EBL.
+> With a **classic ESP32** (ESP32-D0WD) the connection is stable (long-term tests of 30 hours
+> and more). The ESP32-C3 is not supported, see [Hardware](#hardware).
+>
+> **Please report your experience** in the [Issues](https://github.com/Moormerlander/esphome-truma-inetx/issues):
+> panel type and software, heater/AC, ESP32 board, how long the connection holds
+> ("Last Disconnect" sensor) and, if something fails, the ESPHome log.
 
 ## Quick start
 
@@ -192,7 +196,7 @@ lists every parameter of every device with its current value. Alternatively
 | `number` | `topic`, `param`, `address`, `min_value`, `max_value`, `step`, `scale` (displayed = value × scale; temperatures: `0.1`) |
 | `select` | `topic`, `param`, `address`, `options: {0: "Eco", 1: "Comfort"}` |
 | `switch` | `topic`, `param`, `address`, `on_value` (1), `off_value` (0) |
-| `button` | `type: pair \| unpair \| reconnect \| dump \| measure \| sync_time \| write` (for `write`: `topic`, `param`, `value`, `address`) |
+| `button` | `type: pair \| unpair \| reconnect \| dump \| log_raw \| measure \| sync_time \| write` (for `write`: `topic`, `param`, `value`, `address`; `log_raw` logs every message in full for 2 min) |
 | `climate` | `supported_modes: [HEAT, FAN_ONLY, COOL, AUTO, DRY]`, `appliance_address: 0x0201` (heater whose values are shown) |
 
 How the thermostat entity works:

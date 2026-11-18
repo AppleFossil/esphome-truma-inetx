@@ -70,3 +70,4 @@ substitutions:
   wifi_signal: "WiFi Signal"
   opt_fast: "Fast"
   opt_comfort: "Comfort"
+  log_raw_messages: "Log Raw Messages (2 min)"

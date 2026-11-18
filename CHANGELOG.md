@@ -1,10 +1,17 @@
 # Changelog
 
-## Unreleased (example YAML only)
+## 0.7.0 – first public beta
+- Diagnostics: new button `type: log_raw` logs every parameter message in full for 2 minutes
+  (used to track down the room/water temperature that alternates between two values).
 - Entities grouped into ESPHome sub-devices: "Truma Heater" (Combi: heating and hot water),
   "Truma Power" (EBL), "Truma Panel". Connection and diagnostics stay on the ESP itself.
 - One example YAML (`truma-inetx.yaml`) instead of two: the language is chosen with one line,
   which loads `lang/de.yaml` or `lang/en.yaml` (entity names, device names, status texts).
+- The example YAML loads component and language file from the tag `v0.7.0`, so an update on
+  `main` never changes a working installation by surprise.
+- Known issues: room and water temperature alternate between two values about 0.4-0.5 °C
+  apart; some status values (battery, tank sensors, energy mode) are not decoded yet;
+  ESP32-C3/S3/C6 are not supported.
 
 ## 0.6.5
 - Panel clock: the panel ignores writes to `TimeAndDate.SystemTime`. The ESP now writes the

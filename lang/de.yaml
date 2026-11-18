@@ -70,3 +70,4 @@ substitutions:
   wifi_signal: "WLAN-Signal"
   opt_fast: "Schnell"
   opt_comfort: "Komfort"
+  log_raw_messages: "Rohdaten ins Log (2 min)"

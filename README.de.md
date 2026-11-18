@@ -8,10 +8,14 @@ spricht nur noch per ESPHome-API über WLAN mit dem ESP.
 
 Damit entfallen die HA-Integration `truma_inetx` und der Bluetooth-Proxy.
 
-> **Status (0.6.5, November 2026):** Getestet an einem iNet X Pro Panel (Software 3.4.27)
-> mit Combi 6 und Schaudt EBL. Mit einem **klassischen ESP32** (ESP32-D0WD) läuft die
-> Verbindung stabil (Langzeittest: 30 Stunden ohne Abbruch, Test mit 0.6.5 läuft). Mit dem
-> ESP32-C3 klappt das Wiederverbinden nicht zuverlässig, siehe unten.
+> **Status: öffentliche Beta 0.7.0 (November 2026) – Tester gesucht!**
+> Getestet an einem iNet X Pro Panel (Software 3.4.27) mit Combi 6 und Schaudt EBL. Mit einem
+> **klassischen ESP32** (ESP32-D0WD) läuft die Verbindung stabil (Langzeittests über 30 Stunden).
+> Der ESP32-C3 wird nicht unterstützt, siehe [Hardware](#hardware).
+>
+> **Bitte berichte deine Erfahrungen** in den [Issues](https://github.com/Moormerlander/esphome-truma-inetx/issues):
+> Panel-Typ und -Software, Heizung/Klimaanlage, ESP32-Board, wie lange die Verbindung hält
+> (Sensor „Letzte Trennung“) und, falls etwas nicht klappt, das ESPHome-Log.
 
 ## Schnellstart
 
@@ -195,7 +199,7 @@ jeder Parameter jedes Geräts mit aktuellem Wert im Log. Alternativ `log_paramet
 | `number` | `topic`, `param`, `address`, `min_value`, `max_value`, `step`, `scale` (Anzeige = Wert × scale; Temperaturen: `0.1`) |
 | `select` | `topic`, `param`, `address`, `options: {0: "Eco", 1: "Comfort"}` |
 | `switch` | `topic`, `param`, `address`, `on_value` (1), `off_value` (0) |
-| `button` | `type: pair \| unpair \| reconnect \| dump \| measure \| sync_time \| write` (bei `write`: `topic`, `param`, `value`, `address`) |
+| `button` | `type: pair \| unpair \| reconnect \| dump \| log_raw \| measure \| sync_time \| write` (bei `write`: `topic`, `param`, `value`, `address`; `log_raw` schreibt 2 min lang jede Meldung komplett ins Log) |
 | `climate` | `supported_modes: [HEAT, FAN_ONLY, COOL, AUTO, DRY]`, `appliance_address: 0x0201` (Heizung, deren Werte angezeigt werden) |
 
 Die Thermostat-Entität funktioniert so:

@@ -25,6 +25,8 @@ TYPES = {
     "write": 5,
     # Set the panel clock from the Home Assistant time (needs time_id).
     "sync_time": 6,
+    # Diagnostics: log every parameter message in full for 2 minutes.
+    "log_raw": 7,
 }
 
 

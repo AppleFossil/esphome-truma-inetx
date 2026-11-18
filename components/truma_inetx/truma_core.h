@@ -313,6 +313,8 @@ class Session {
   std::function<void()> on_ready;
   std::function<void(const char *reason)> on_failed;
   bool log_params{false};
+  // Log every parameter message in full (all CBOR fields) until this time.
+  void log_raw_for(uint32_t ms) { log_raw_until_ = now_ + ms; log_raw_on_ = true; }
 
   // Timings (ms), public for tests
   uint32_t register_timeout{20000};
@@ -326,6 +328,8 @@ class Session {
   uint32_t startup_timeout{120000};
 
  private:
+  bool log_raw_on_{false};
+  uint32_t log_raw_until_{0};
   enum TxTag : uint8_t { TAG_NONE, TAG_DISC, TAG_MEASURE_FRESH, TAG_MEASURE_GREY };
   void handle_frame_(const Frame &f);
   void handle_sent_(const TxResult &r);

@@ -1076,6 +1076,15 @@ void Session::handle_frame_(const Frame &f) {
   }
   if (f.control != CTRL_MBP)
     return;
+  if (log_raw_on_) {
+    if (static_cast<int32_t>(now_ - log_raw_until_) > 0) {
+      log_raw_on_ = false;
+      LOGI("raw: logging finished");
+    } else {
+      LOGI("raw 0x%04X->0x%04X sub=0x%02X corr=%u %s", f.src, f.dest, f.sub_type, static_cast<unsigned>(f.corr_id),
+           c.to_string().c_str());
+    }
+  }
 
   auto file = [this, &f](const CborValue *tn, const CborValue *pn, const CborValue *v) {
     if (tn == nullptr || pn == nullptr || v == nullptr || tn->type != CborValue::TEXT || pn->type != CborValue::TEXT ||

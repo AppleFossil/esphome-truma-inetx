@@ -12,7 +12,7 @@
 # alle Entitätsnamen, die Gerätenamen und die Statustexte um.
 
 packages:
-  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@main
+  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.7.0
   # Without GitHub access / ohne GitHub: put lang/de.yaml next to this file and use
   #   language: !include lang/de.yaml
 
@@ -58,7 +58,7 @@ captive_portal:
 
 # --- Truma iNet X ---------------------------------------------------------
 external_components:
-  - source: github://Moormerlander/esphome-truma-inetx@main
+  - source: github://Moormerlander/esphome-truma-inetx@v0.7.0
     components: [truma_inetx]
   # Local instead of GitHub: put the "components" folder next to this file and use
   #   - source: { type: local, path: components }
@@ -268,6 +268,10 @@ button:
   - platform: truma_inetx
     type: dump
     name: "${dump_all_parameters_to_log}"
+    entity_category: diagnostic
+  - platform: truma_inetx
+    type: log_raw
+    name: "${log_raw_messages}"
     entity_category: diagnostic
   - platform: truma_inetx
     type: measure

@@ -281,7 +281,7 @@ class TrumaSwitch : public switch_::Switch, public TrumaListener {
 #endif
 
 #ifdef USE_BUTTON
-enum ButtonType : uint8_t { BTN_PAIR, BTN_UNPAIR, BTN_RECONNECT, BTN_DUMP, BTN_MEASURE, BTN_WRITE, BTN_SYNC_TIME };
+enum ButtonType : uint8_t { BTN_PAIR, BTN_UNPAIR, BTN_RECONNECT, BTN_DUMP, BTN_MEASURE, BTN_WRITE, BTN_SYNC_TIME, BTN_LOG_RAW };
 
 class TrumaButton : public button::Button {
  public:
@@ -317,6 +317,9 @@ class TrumaButton : public button::Button {
         break;
       case BTN_SYNC_TIME:
         this->parent_->sync_panel_time();
+        break;
+      case BTN_LOG_RAW:
+        this->parent_->log_raw();
         break;
     }
   }

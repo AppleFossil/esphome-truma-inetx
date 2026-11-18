@@ -120,6 +120,8 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   void unpair();
   void reconnect();
   void dump_bus();
+  // Diagnostics: log every parameter message in full for a while.
+  void log_raw(uint32_t ms = 120000);
   void request_measurements() { this->session_.request_measurements(); }
   bool write_param(const std::string &topic, const std::string &param, int32_t value, uint16_t address = 0);
   bool write_param_text(const std::string &topic, const std::string &param, const std::string &value,
