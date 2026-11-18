@@ -1,12 +1,19 @@
 # Changelog
 
+## 0.7.2
+- Reconnect after a link loss during login: the ESP-IDF Bluetooth stack can drop the panel key
+  from RAM ("Deleting unpaired device"), although it is still in flash. The ESP then tried to
+  pair from scratch and the panel refused ("pairing not supported", 0x52) until the ESP was
+  restarted by hand. The ESP now restarts itself in this case (at most twice in a row) and
+  reconnects with the stored key.
+- The example YAML loads component and language file from the tag `v0.7.2`.
+
 ## 0.7.1
 - Room, water and panel temperature no longer alternate. The heater and the panel send each
   temperature twice, about 0.3 s apart, and the first message is 0.4 °C higher (checked against
   a separate thermometer: the second value is the right one). The ESP now holds every update
   for 0.8 s and passes on only the last value of such a pair. All entities therefore update
   0.8 s later than before.
-- The example YAML loads component and language file from the tag `v0.7.1`.
 
 ## 0.7.0 – first public beta
 - Diagnostics: new button `type: log_raw` logs every parameter message in full for 2 minutes

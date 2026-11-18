@@ -1,9 +1,11 @@
 #include "truma_inetx.h"
 
+#include "esphome/core/application.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
 #include "esphome/components/esp32_ble/ble.h"
 
+#include <esp_attr.h>
 #include <esp_bt.h>
 #include <mbedtls/aes.h>
 
@@ -15,6 +17,13 @@ namespace esphome {
 namespace truma_inetx {
 
 static const char *const TAG = "truma_inetx";
+
+// Counts restarts done to reload a lost key (survives a software restart, not a power cut).
+static const uint32_t KEY_RELOAD_MAGIC = 0x7E1C0A42;
+static RTC_NOINIT_ATTR uint32_t key_reload_magic;
+static RTC_NOINIT_ATTR uint32_t key_reload_count;
+// More restarts in a row than this and the key is really gone: pair again by hand.
+static const uint32_t KEY_RELOAD_MAX = 2;
 
 // Time without a session-level answer before a half-open link is dropped.
 static const uint32_t LINK_SETUP_TIMEOUT = 30000;
@@ -702,9 +711,29 @@ void TrumaInetX::on_gap_event(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
         ESP_LOGW(TAG, "Encryption/pairing with the panel failed (reason 0x%02X)%s", a.fail_reason,
                  this->bonds_.empty() ? " -- is the panel in add-device mode?"
                                       : " -- if this repeats, the panel has forgotten this device: pair again");
+        // The stack can drop the panel's key from RAM after a link loss ("Deleting unpaired
+        // device"); it then tries to pair from scratch and the panel answers "pairing not
+        // supported". The key is still in flash, so a restart loads it again.
+        if (a.fail_reason == ESP_AUTH_SMP_PAIR_NOT_SUPPORT && !this->pairing_) {
+          this->load_bonds_();
+          if (key_reload_magic != KEY_RELOAD_MAGIC)
+            key_reload_count = 0;
+          if (!this->bonds_.empty() && key_reload_count < KEY_RELOAD_MAX) {
+            key_reload_magic = KEY_RELOAD_MAGIC;
+            key_reload_count++;
+            ESP_LOGW(TAG, "The Bluetooth stack lost the panel key from RAM, it is still in flash: restarting the ESP "
+                          "to load it (%u/%u)",
+                     static_cast<unsigned>(key_reload_count), static_cast<unsigned>(KEY_RELOAD_MAX));
+            this->drop_link_("authentication failed");
+            this->set_timeout("key_reload", 1000, []() { App.safe_reboot(); });
+            break;
+          }
+        }
         this->drop_link_("authentication failed");
         break;
       }
+      key_reload_magic = KEY_RELOAD_MAGIC;
+      key_reload_count = 0;
       const bool was_pairing = this->pairing_;
       ESP_LOGI(TAG, "Encrypted (auth mode 0x%02X%s)", a.auth_mode,
                (a.auth_mode & ESP_LE_AUTH_REQ_MITM) ? ", authenticated with code" : ", without code");
