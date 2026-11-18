@@ -7,6 +7,7 @@
 #include <esp_bt.h>
 #include <mbedtls/aes.h>
 
+#include <cstdio>
 #include <cstring>
 #include <strings.h>
 
@@ -205,6 +206,8 @@ void TrumaInetX::setup() {
     for (auto *l : this->listeners_)
       if (l->wants(src, topic, param))
         l->on_value(src, v);
+    if (src == truma_inetx_proto::DEV_PANEL && topic == "TimeAndDate" && param == "Time")
+      this->check_panel_time_(v);
   };
   this->session_.on_ready = [this]() {
     this->failures_ = 0;
@@ -212,6 +215,8 @@ void TrumaInetX::setup() {
     this->session_was_running_ = true;
     ESP_LOGI(TAG, "Connected to the Truma panel (bus address 0x%04X)", this->session_.assigned_addr());
     this->request_robust_conn_params_();
+    if (this->time_sync_ && !this->time_rejected_)
+      this->set_timeout("time_sync", 15000, [this]() { this->auto_sync_time_(); });
     for (auto *l : this->listeners_)
       l->refresh();
     this->notify_status_();
@@ -908,6 +913,90 @@ void TrumaInetX::request_robust_conn_params_() {
     ESP_LOGW(TAG, "esp_ble_gap_update_conn_params failed: %d", err);
   // ESPHome does not pass the result on to components: read back what is in use.
   this->set_timeout("link_params", 5000, [this]() { this->read_link_params_(); });
+}
+
+void TrumaInetX::sync_panel_time() {
+  this->time_rewrites_ = 0;
+  this->write_panel_time_();
+}
+
+void TrumaInetX::auto_sync_time_() {
+  if (this->time_rejected_)
+    return;
+  this->sync_panel_time();
+  // Again in 24 h (replaced if the session restarts in between).
+  this->set_timeout("time_sync", 24UL * 3600UL * 1000UL, [this]() { this->auto_sync_time_(); });
+}
+
+// The panel ignores writes to TimeAndDate.SystemTime. Its menu sets the clock
+// as text: TimeAndDate.Time "HH:MM" and TimeAndDate.Date "DD.MM.YY".
+void TrumaInetX::write_panel_time_() {
+#ifdef USE_TIME
+  if (this->time_ == nullptr) {
+    ESP_LOGW(TAG, "Panel clock: no time_id configured");
+    return;
+  }
+  auto now = this->time_->now();
+  if (!now.is_valid()) {
+    ESP_LOGW(TAG, "Panel clock: Home Assistant time not available yet");
+    return;
+  }
+  if (!this->session_.running())
+    return;
+  char hm[8], dmy[12];
+  snprintf(hm, sizeof(hm), "%02d:%02d", now.hour, now.minute);
+  snprintf(dmy, sizeof(dmy), "%02d.%02d.%02d", now.day_of_month, now.month, now.year % 100);
+  ESP_LOGI(TAG, "Panel clock: setting %s %s", dmy, hm);
+  bool ok = this->write_param_text("TimeAndDate", "Date", dmy, truma_inetx_proto::DEV_PANEL);
+  ok = this->write_param_text("TimeAndDate", "Time", hm, truma_inetx_proto::DEV_PANEL) && ok;
+  if (ok) {
+    // The panel reports its "HH:MM" every minute; judge the first report that
+    // arrives a few seconds after the write.
+    this->time_check_from_ = millis() + 3000;
+    this->time_check_until_ = millis() + 130000;
+  }
+#else
+  ESP_LOGW(TAG, "Panel clock: no time_id configured");
+#endif
+}
+
+void TrumaInetX::check_panel_time_(const truma_inetx_proto::CborValue &v) {
+#ifdef USE_TIME
+  const uint32_t ms = millis();
+  if (this->time_check_until_ == 0 || static_cast<int32_t>(ms - this->time_check_until_) > 0 ||
+      static_cast<int32_t>(ms - this->time_check_from_) < 0)
+    return;
+  if (this->time_ == nullptr || v.type != truma_inetx_proto::CborValue::TEXT)
+    return;
+  int hh = 0, mm = 0;
+  if (sscanf(v.s.c_str(), "%d:%d", &hh, &mm) != 2)
+    return;
+  auto now = this->time_->now();
+  if (!now.is_valid())
+    return;
+  int diff = (hh * 60 + mm) - (now.hour * 60 + now.minute);
+  while (diff > 720)
+    diff -= 1440;
+  while (diff < -720)
+    diff += 1440;
+  this->time_check_until_ = 0;
+  if (diff >= -2 && diff <= 2) {
+    ESP_LOGI(TAG, "Panel clock: shows %s, matches the local time", v.s.c_str());
+    this->time_rejected_ = false;
+    return;
+  }
+  if (this->time_rewrites_ < 1) {
+    // Maybe the write raced with the panel's minute report: try once more.
+    this->time_rewrites_++;
+    ESP_LOGI(TAG, "Panel clock: shows %s, local time %02d:%02d -- trying once more", v.s.c_str(), now.hour, now.minute);
+    this->set_timeout("time_rewrite", 2000, [this]() { this->write_panel_time_(); });
+    return;
+  }
+  ESP_LOGW(TAG, "Panel clock: shows %s, local time %02d:%02d -- the panel does not accept the time, "
+                "no more automatic attempts (button still works)",
+           v.s.c_str(), now.hour, now.minute);
+  this->time_rejected_ = true;
+#endif
 }
 
 void TrumaInetX::read_link_params_() {

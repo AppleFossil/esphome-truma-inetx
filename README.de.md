@@ -92,7 +92,9 @@ Was bleibt, sind Eigenheiten des **Panels selbst**:
 ## Installation
 
 1. Im ESPHome Builder ein neues Gerät anlegen und den Inhalt von
-   [`truma-inetx.de.yaml`](truma-inetx.de.yaml) (deutsche Entitätsnamen; englische: [`truma-inetx.en.yaml`](truma-inetx.en.yaml)) hineinkopieren.
+   [`truma-inetx.yaml`](truma-inetx.yaml) hineinkopieren. Sie ist auf Deutsch eingestellt;
+   für Englisch oben bei `packages: language:` `lang/de.yaml` durch `lang/en.yaml` ersetzen.
+   Die Sprachdatei stellt alle Entitätsnamen, die Gerätenamen und die Statustexte um ([`lang/`](lang)).
 2. Die Secrets eintragen (Vorlage: [`secrets.example.yaml`](secrets.example.yaml)).
 3. Flashen. Voraussetzung: ESPHome ≥ 2025.11 und ein **klassischer ESP32** (`board: esp32dev`).
    Die Komponente wird von ESPHome automatisch aus diesem Repository geladen
@@ -145,6 +147,7 @@ truma_inetx:
   log_parameters: false     # true = jede Wertänderung ins Log
   language: de              # en | de: Sprache von Status, „Letzte Trennung“ und Zeitschaltuhren
   supervision_timeout: 20s  # so lange überlebt die Verbindung ohne Lebenszeichen vom Panel (2–32 s)
+  time_sync: true           # Panel-Uhr nach dem Verbinden und täglich aus time_id stellen
 ```
 
 Der Bus hinter dem Panel ist generisch. Jeder Wert ist `topic` + `param` und kommt von einem
@@ -163,7 +166,7 @@ jeder Parameter jedes Geräts mit aktuellem Wert im Log. Alternativ `log_paramet
 | `number` | `topic`, `param`, `address`, `min_value`, `max_value`, `step`, `scale` (Anzeige = Wert × scale; Temperaturen: `0.1`) |
 | `select` | `topic`, `param`, `address`, `options: {0: "Eco", 1: "Comfort"}` |
 | `switch` | `topic`, `param`, `address`, `on_value` (1), `off_value` (0) |
-| `button` | `type: pair \| unpair \| reconnect \| dump \| measure \| write` (bei `write`: `topic`, `param`, `value`, `address`) |
+| `button` | `type: pair \| unpair \| reconnect \| dump \| measure \| sync_time \| write` (bei `write`: `topic`, `param`, `value`, `address`) |
 | `climate` | `supported_modes: [HEAT, FAN_ONLY, COOL, AUTO, DRY]`, `appliance_address: 0x0201` (Heizung, deren Werte angezeigt werden) |
 
 Die Thermostat-Entität funktioniert so:

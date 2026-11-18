@@ -89,8 +89,9 @@ What remains are quirks of the **panel itself**:
 ## Installation
 
 1. In the ESPHome Builder create a new device and paste the content of
-   [`truma-inetx.en.yaml`](truma-inetx.en.yaml) (English entity names; German:
-   [`truma-inetx.de.yaml`](truma-inetx.de.yaml)).
+   [`truma-inetx.yaml`](truma-inetx.yaml). Near the top, in `packages: language:`, change
+   `lang/de.yaml` to `lang/en.yaml` for English entity names. The language file sets all
+   entity names, the device names and the status texts ([`lang/`](lang)).
 2. Fill in the secrets (template: [`secrets.example.yaml`](secrets.example.yaml)).
 3. Flash. Requirements: ESPHome ≥ 2025.11 and a **classic ESP32** (`board: esp32dev`).
    ESPHome loads the component from this repository automatically
@@ -143,6 +144,7 @@ truma_inetx:
   log_parameters: false     # true = log every value change
   language: en              # en | de: language of status, "Last Disconnect" and timer texts
   supervision_timeout: 20s  # how long the link survives without hearing the panel (2-32 s)
+  time_sync: true           # set the panel clock from time_id after connecting and daily
 ```
 
 The bus behind the panel is generic. Every value is a `topic` + `param` and comes from a
@@ -162,7 +164,7 @@ lists every parameter of every device with its current value. Alternatively
 | `number` | `topic`, `param`, `address`, `min_value`, `max_value`, `step`, `scale` (displayed = value × scale; temperatures: `0.1`) |
 | `select` | `topic`, `param`, `address`, `options: {0: "Eco", 1: "Comfort"}` |
 | `switch` | `topic`, `param`, `address`, `on_value` (1), `off_value` (0) |
-| `button` | `type: pair \| unpair \| reconnect \| dump \| measure \| write` (for `write`: `topic`, `param`, `value`, `address`) |
+| `button` | `type: pair \| unpair \| reconnect \| dump \| measure \| sync_time \| write` (for `write`: `topic`, `param`, `value`, `address`) |
 | `climate` | `supported_modes: [HEAT, FAN_ONLY, COOL, AUTO, DRY]`, `appliance_address: 0x0201` (heater whose values are shown) |
 
 How the thermostat entity works:

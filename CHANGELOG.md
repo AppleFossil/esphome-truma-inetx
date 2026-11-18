@@ -1,8 +1,26 @@
 # Changelog
 
+## Unreleased (example YAML only)
+- Entities grouped into ESPHome sub-devices: "Truma Heater" (Combi: heating and hot water),
+  "Truma Power" (EBL), "Truma Panel". Connection and diagnostics stay on the ESP itself.
+- One example YAML (`truma-inetx.yaml`) instead of two: the language is chosen with one line,
+  which loads `lang/de.yaml` or `lang/en.yaml` (entity names, device names, status texts).
+
+## 0.6.5
+- Panel clock: the panel ignores writes to `TimeAndDate.SystemTime`. The ESP now writes the
+  time as text (`TimeAndDate.Time` "HH:MM", `TimeAndDate.Date` "DD.MM.YY"), checks the panel's
+  next minute report and stops the daily attempts if the panel does not take it.
+
+## 0.6.4
+- Panel clock: the ESP writes the Home Assistant time 15 s after connecting and then once a day
+  (option `time_sync`, default on) and checks the time the panel displays.
+- New button `type: sync_time` ("Set Panel Clock").
+- Subscribes to `TimeAndDate`, so "Panel Time" updates live.
+
 ## 0.6.3
 - The panel rejects connection intervals of 30-50 ms ("unacceptable connection interval").
   The ESP now keeps ESPHome's interval (8.75-11.25 ms) and only raises the supervision timeout.
+- Timer entities removed from the example YAML (`format: timer` still works if you add them).
 - New diagnostic sensor `type: link_params` ("Radio Link"): interval, latency and supervision
   timeout actually in use, read back from the Bluetooth stack.
 

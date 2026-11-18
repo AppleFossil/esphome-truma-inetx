@@ -492,7 +492,7 @@ const std::vector<std::vector<std::string>> TOPIC_BATCHES = {
      "Temperature", "Transfer"},
     {"VBat", "WaterHeating", "AmbientLight", "Panel", "BatteryMngmt", "Install", "Connect", "TimerConfig",
      "BleDeviceManagement", "BluetoothDevice"},
-    {"System", "Resources", "PowerMgmt"},
+    {"System", "Resources", "PowerMgmt", "TimeAndDate"},
 };
 
 // Only the panel and the heater answer a broadcast discovery; everything else

@@ -23,6 +23,8 @@ TYPES = {
     "dump": 3,
     "measure": 4,
     "write": 5,
+    # Set the panel clock from the Home Assistant time (needs time_id).
+    "sync_time": 6,
 }
 
 

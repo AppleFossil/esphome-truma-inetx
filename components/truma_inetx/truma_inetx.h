@@ -103,6 +103,9 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   void set_privacy(bool b) { this->privacy_ = b; }
   void set_german(bool b) { this->german_ = b; }
   void set_supervision_timeout(uint32_t ms) { this->supervision_timeout_ms_ = ms; }
+  void set_time_sync(bool b) { this->time_sync_ = b; }
+  // Write the Home Assistant time into the panel clock and check the result.
+  void sync_panel_time();
   bool german() const { return this->german_; }
   // Pick the text for the configured language.
   const char *tr(const char *en, const char *de) const { return this->german_ ? de : en; }
@@ -179,6 +182,9 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   // Ask for a longer supervision timeout once the session runs.
   void request_robust_conn_params_();
   void read_link_params_();
+  void write_panel_time_();
+  void auto_sync_time_();
+  void check_panel_time_(const truma_inetx_proto::CborValue &v);
   void record_disconnect_(uint8_t hci_reason);
   std::string now_text_();
   const char *session_state_text_() const;
@@ -201,6 +207,12 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   bool privacy_{false};
   bool german_{false};
   uint32_t supervision_timeout_ms_{20000};
+  bool time_sync_{true};
+  // Clock sync: check the panel's next "HH:MM" report after a write.
+  uint32_t time_check_from_{0};
+  uint32_t time_check_until_{0};
+  uint8_t time_rewrites_{0};
+  bool time_rejected_{false};
   bool status_is_countdown_{false};
   std::string last_disconnect_{"-"};
   std::string link_params_{"-"};
