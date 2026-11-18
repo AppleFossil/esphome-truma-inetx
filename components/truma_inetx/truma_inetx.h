@@ -215,6 +215,18 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   uint32_t time_check_until_{0};
   uint8_t time_rewrites_{0};
   bool time_rejected_{false};
+  // The heater and the panel send each temperature twice, 0.3 s apart and
+  // 0.4 degC apart (no field tells them apart). Hold every update briefly and
+  // pass on only the last value of such a pair.
+  struct PendingUpdate {
+    uint16_t src;
+    std::string topic;
+    std::string param;
+    truma_inetx_proto::CborValue value;
+    uint32_t due;
+  };
+  std::map<std::string, PendingUpdate> pending_updates_;
+  void flush_updates_(uint32_t now, bool all);
   bool status_is_countdown_{false};
   std::string last_disconnect_{"-"};
   std::string link_params_{"-"};

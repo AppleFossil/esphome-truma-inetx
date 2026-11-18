@@ -203,11 +203,12 @@ void TrumaInetX::setup() {
   };
   this->session_.on_update = [this](uint16_t src, const std::string &topic, const std::string &param,
                                     const truma_inetx_proto::CborValue &v) {
-    for (auto *l : this->listeners_)
-      if (l->wants(src, topic, param))
-        l->on_value(src, v);
     if (src == truma_inetx_proto::DEV_PANEL && topic == "TimeAndDate" && param == "Time")
       this->check_panel_time_(v);
+    char key[8];
+    snprintf(key, sizeof(key), "%04X", src);
+    // A newer value within the window replaces the held one (last one wins).
+    this->pending_updates_[std::string(key) + topic + "." + param] = PendingUpdate{src, topic, param, v, millis() + 800};
   };
   this->session_.on_ready = [this]() {
     this->failures_ = 0;
@@ -351,8 +352,24 @@ void TrumaInetX::set_link_(Link l) {
   this->link_since_ = millis();
 }
 
+void TrumaInetX::flush_updates_(uint32_t now, bool all) {
+  for (auto it = this->pending_updates_.begin(); it != this->pending_updates_.end();) {
+    if (!all && static_cast<int32_t>(now - it->second.due) < 0) {
+      ++it;
+      continue;
+    }
+    const PendingUpdate u = std::move(it->second);
+    it = this->pending_updates_.erase(it);
+    for (auto *l : this->listeners_)
+      if (l->wants(u.src, u.topic, u.param))
+        l->on_value(u.src, u.value);
+  }
+}
+
 void TrumaInetX::loop() {
   const uint32_t now = millis();
+  if (!this->pending_updates_.empty())
+    this->flush_updates_(now, false);
 
   if (!this->ble_ready_done_) {
     if (esp32_ble::global_ble != nullptr && esp32_ble::global_ble->is_active()) {

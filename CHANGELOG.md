@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.1
+- Room, water and panel temperature no longer alternate. The heater and the panel send each
+  temperature twice, about 0.3 s apart, and the first message is 0.4 °C higher (checked against
+  a separate thermometer: the second value is the right one). The ESP now holds every update
+  for 0.8 s and passes on only the last value of such a pair. All entities therefore update
+  0.8 s later than before.
+- The example YAML loads component and language file from the tag `v0.7.1`.
+
 ## 0.7.0 – first public beta
 - Diagnostics: new button `type: log_raw` logs every parameter message in full for 2 minutes
   (used to track down the room/water temperature that alternates between two values).
