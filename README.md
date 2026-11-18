@@ -8,10 +8,62 @@ the ESP via the ESPHome API over WiFi.
 
 No Home Assistant integration (`truma_inetx`) and no Bluetooth proxy needed.
 
-> **Status (0.6.0, November 2026):** Tested with an iNet X Pro panel (software 3.4.27),
+> **Status (0.6.5, November 2026):** Tested with an iNet X Pro panel (software 3.4.27),
 > a Combi 6 heater and a Schaudt EBL. With a **classic ESP32** (ESP32-D0WD) the connection
-> is stable (long-term test: more than 18 hours without a drop). With the ESP32-C3,
-> reconnecting does not work reliably, see below.
+> is stable (long-term test: 30 hours without a drop, test with 0.6.5 running). With the
+> ESP32-C3, reconnecting does not work reliably, see below.
+
+## Quick start
+
+### Requirements
+- A **classic ESP32**, e.g. "ESP32 DevKit" or "ESP32-WROOM-32". **Not** a C3, S3 or C6 (see [Hardware](#hardware)).
+- Home Assistant with the **ESPHome add-on** (ESPHome Builder), version 2025.11 or later.
+- A USB cable and Chrome or Edge for the first flash.
+
+### 1. Clean up
+- If you used the "Truma iNet X (BLE)" HA integration before: **delete** it, otherwise two devices compete for the panel.
+- On the panel, under *Connected smartphones*, delete old entries, especially the one of your former Bluetooth proxy. The panel only stores a few devices.
+
+### 2. Create the device in the ESPHome Builder
+1. **+ New Device** → give it a name, e.g. `truma-inetx` → choose **ESP32**.
+2. Finish the wizard. It creates a small starter YAML with an **API key**: copy it.
+3. Click **Edit** on the device, replace the whole content with [`truma-inetx.yaml`](truma-inetx.yaml) and save.
+4. **Language:** at the top, `packages: language:` points to `lang/de.yaml`. Change it to `lang/en.yaml` for English. The language file sets all entity names, the device names and the status texts.
+
+### 3. Add the secrets
+In the ESPHome Builder open **Secrets** (top right) and add, following [`secrets.example.yaml`](secrets.example.yaml):
+
+```yaml
+wifi_ssid: "My-WiFi"
+wifi_password: "…"
+api_encryption_key: "…"     # the key from step 2
+ota_password: "…"           # any password
+fallback_password: "…"      # any password, at least 8 characters
+```
+
+### 4. First flash over USB
+1. Connect the ESP to your computer via USB.
+2. On the device choose **Install → Plug into this computer**. ESPHome fetches the component from GitHub by itself.
+3. From now on all updates go over WiFi.
+
+### 5. Add it to Home Assistant
+- HA reports a newly discovered ESPHome device under *Settings → Devices & services*: **Add**, and enter the API key if asked.
+- You then get the ESP itself plus the devices **Truma Heater**, **Truma Power** and **Truma Panel**.
+
+### 6. Place the ESP
+As close to the panel as possible (a few metres, line of sight), with permanent power (12 V → 5 V USB adapter).
+
+### 7. Pair the panel
+1. On the panel start **"Add new device"**.
+2. Right after that press **"Pair Panel"** on the ESP in HA.
+3. Wait until "Connection Status" shows **"Connected"**. No code is needed. "Something went wrong" on the panel can be ignored.
+4. Check: the panel lists **exactly one** entry for the ESP, with a Bluetooth symbol.
+
+### Good to know
+- **After a firmware update** the ESP usually reconnects by itself. If not: power-cycle the panel briefly, do not pair again.
+- **Pair again** only if the status says "Panel rejects this device", and delete **all** old entries on the panel first.
+
+---
 
 ## Key findings from real-world testing
 
@@ -25,8 +77,8 @@ No Home Assistant integration (`truma_inetx`) and no Bluetooth proxy needed.
    error `0x3e`). That is why, since 0.5.0, the ESP **never** closes a working connection
    itself. If something goes wrong it only restarts the Truma session over the existing
    radio link, also when you press "Reconnect".
-3. **Every flash closes the connection.** Afterwards: power-cycle the panel, delete the
-   entries on the panel, press "Remove Pairing", pair again.
+3. **Every flash closes the connection.** Since 0.6.3 the ESP usually reconnects by itself.
+   If not: power-cycle the panel briefly. The pairing survives that, no need to pair again.
 4. The panel always pairs **without a code** ("Just Works"). Its Bluetooth module is a
    separate device on the Truma bus (address 0x0601, `BleDeviceManagement`).
 5. While the ESP is connected, the panel shows "To pair further devices please close other
@@ -35,7 +87,7 @@ No Home Assistant integration (`truma_inetx`) and no Bluetooth proxy needed.
    value flips back and forth – always bind sensors to one device (heater 0x0201,
    panel 0x0101, power distribution unit 0x0405).
 
-### Pairing step by step
+### Re-pairing step by step
 
 1. Power-cycle the panel (only needed if there was a connection before or you just flashed).
 2. On the panel, under *Connected smartphones*, delete **all** entries of the ESP.
@@ -86,31 +138,7 @@ What remains are quirks of the **panel itself**:
 
 ---
 
-## Installation
-
-1. In the ESPHome Builder create a new device and paste the content of
-   [`truma-inetx.yaml`](truma-inetx.yaml). Near the top, in `packages: language:`, change
-   `lang/de.yaml` to `lang/en.yaml` for English entity names. The language file sets all
-   entity names, the device names and the status texts ([`lang/`](lang)).
-2. Fill in the secrets (template: [`secrets.example.yaml`](secrets.example.yaml)).
-3. Flash. Requirements: ESPHome ≥ 2025.11 and a **classic ESP32** (`board: esp32dev`).
-   ESPHome loads the component from this repository automatically
-   (`external_components: source: github://Moormerlander/esphome-truma-inetx@main`).
-4. Add the device in Home Assistant (it is discovered automatically).
-5. Pair as described under "Pairing step by step".
-
-### Before you start: clean up the old connection
-
-The panel only stores about **4 Bluetooth devices** and refuses new ones when the list is full.
-
-- **Delete** the "Truma iNet X (BLE)" integration in Home Assistant. Otherwise two centrals
-  compete for the panel.
-- **Clear the stored device list** in the Truma app or on the panel (at least remove the old
-  HA entry).
-
----
-
-## Pairing
+## Pairing in detail
 
 1. Leave the panel on its **normal screen**.
 2. In Home Assistant press **"Pair Panel"**. The ESP is now in pairing mode for 120 s (see
@@ -239,7 +267,8 @@ What the tests cover:
   the ESP rescan), or use an ESP32 board with Ethernet (e.g. WT32-ETH01, Olimex ESP32-POE)
   so Bluetooth has the radio to itself.
 - Permanent status 0x3E / `connect failed` after a disconnect or after flashing:
-  power-cycle the panel, then pair again (see "Pairing step by step").
+  power-cycle the panel. Only if the status then says "Panel rejects this device", pair again
+  (see "Re-pairing step by step").
 - `the panel assigned no address` right after a panel restart: normal, goes away after
   about 1–2 minutes.
 
