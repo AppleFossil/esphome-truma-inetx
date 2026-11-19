@@ -40,11 +40,13 @@ class TrumaListener {
   }
   // Status-only entities (connected, pairing, status text) set a type instead.
   void set_status_type(uint8_t type) { this->status_type_ = type; }
+  // n-th bus device (ascending address) publishing this topic, e.g. the second
+  // gas bottle. 0 = use address_ instead.
+  void set_instance(uint8_t instance) { this->instance_ = instance; }
+  uint8_t instance() const { return this->instance_; }
+  const std::string &topic() const { return this->topic_; }
 
-  virtual bool wants(uint16_t src, const std::string &topic, const std::string &param) const {
-    return !this->topic_.empty() && topic == this->topic_ && param == this->param_ &&
-           (this->address_ == 0 || this->address_ == src);
-  }
+  virtual bool wants(uint16_t src, const std::string &topic, const std::string &param) const;
   virtual void on_value(uint16_t src, const truma_inetx_proto::CborValue &value) {}
   virtual void on_status() {}
   // Re-publish from the bus (after a reconnect).
@@ -56,6 +58,7 @@ class TrumaListener {
   std::string param_;
   uint16_t address_{0};
   uint8_t status_type_{0};
+  uint8_t instance_{0};
 };
 
 enum StatusType : uint8_t {
@@ -112,7 +115,14 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
 #ifdef USE_TIME
   void set_time(time::RealTimeClock *t) { this->time_ = t; }
 #endif
-  void register_listener(TrumaListener *l) { this->listeners_.push_back(l); }
+  void register_listener(TrumaListener *l) {
+    this->listeners_.push_back(l);
+    if (l->instance() != 0)
+      this->instance_publishers_[l->topic()] = 0;
+  }
+  // Address of the n-th (1-based) bus device that publishes anything under the
+  // topic, in ascending address order; 0 if there is none (yet).
+  uint16_t nth_publisher(const std::string &topic, uint8_t n) const;
 
   // --- user actions (buttons / lambdas) ----------------------------------
   void start_pairing();
@@ -198,6 +208,9 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   truma_inetx_proto::Transport transport_;
   truma_inetx_proto::Session session_;
   std::vector<TrumaListener *> listeners_;
+  // Topics with instance-selected entities -> how many publishers were seen.
+  std::map<std::string, uint8_t> instance_publishers_;
+  uint8_t count_publishers_(const std::string &topic) const;
   ESPPreferenceObject pref_;
 #ifdef USE_TIME
   time::RealTimeClock *time_{nullptr};

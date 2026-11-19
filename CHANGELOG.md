@@ -1,12 +1,19 @@
 # Changelog
 
+## 0.7.5
+- Up to two gas bottles: new option `instance:` (1, 2, ...) for every entity. It picks the
+  n-th bus device that publishes the topic, in ascending address order, so two Truma
+  LevelControl sensors work without looking up their addresses. The example YAML now has
+  "Truma Gas Bottle 1" and "2" with level, contents, temperature and the bottle's label
+  from the panel (`GasBtl.Name`), which shows which bottle is which.
+- The example YAML loads component and language file from the tag `v0.7.5`.
+
 ## 0.7.4
 - Gas bottles (Truma LevelControl, untested): the example YAML adds a device "Truma Gas" with
   level (%), contents (kg) and bottle temperature (`GasBtl.FillLevelP`, `FillLevelW`,
   `Temperature`), with names in `lang/de.yaml` and `lang/en.yaml`. Two bottles need an
   `address:` per sensor (see README).
 - The log now shows the ESP-IDF version under the component version (helps with bug reports).
-- The example YAML loads component and language file from the tag `v0.7.4`.
 
 ## 0.7.3
 - ESPHome 2026.11 or later is required: from 2026.11 every sub-device needs `relation:`. The example

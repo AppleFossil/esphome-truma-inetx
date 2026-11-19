@@ -101,12 +101,46 @@ static const uint32_t IDENTITY_MAGIC = 0x54524D31;  // "TRM1"
 // ---------------------------------------------------------------------------
 // TrumaListener
 
+bool TrumaListener::wants(uint16_t src, const std::string &topic, const std::string &param) const {
+  if (this->topic_.empty() || topic != this->topic_ || param != this->param_)
+    return false;
+  if (this->instance_ != 0)
+    return this->parent_ != nullptr && this->parent_->nth_publisher(this->topic_, this->instance_) == src;
+  return this->address_ == 0 || this->address_ == src;
+}
+
 void TrumaListener::refresh() {
   if (this->parent_ == nullptr || this->topic_.empty())
     return;
-  const truma_inetx_proto::CborValue *v = this->parent_->get_value(this->topic_, this->param_, this->address_);
+  uint16_t addr = this->address_;
+  if (this->instance_ != 0) {
+    addr = this->parent_->nth_publisher(this->topic_, this->instance_);
+    if (addr == 0)
+      return;
+  }
+  const truma_inetx_proto::CborValue *v = this->parent_->get_value(this->topic_, this->param_, addr);
   if (v != nullptr)
-    this->on_value(this->address_, *v);
+    this->on_value(addr, *v);
+}
+
+uint16_t TrumaInetX::nth_publisher(const std::string &topic, uint8_t n) const {
+  const std::string prefix = topic + ".";
+  uint8_t seen = 0;
+  for (auto &d : this->session_.bus.devices) {  // std::map: ascending address
+    auto it = d.second.params.lower_bound(prefix);
+    if (it != d.second.params.end() && it->first.compare(0, prefix.size(), prefix) == 0) {
+      if (++seen == n)
+        return d.first;
+    }
+  }
+  return 0;
+}
+
+uint8_t TrumaInetX::count_publishers_(const std::string &topic) const {
+  uint8_t n = 0;
+  while (n < 255 && this->nth_publisher(topic, n + 1) != 0)
+    n++;
+  return n;
 }
 
 // ---------------------------------------------------------------------------
@@ -374,6 +408,18 @@ void TrumaInetX::flush_updates_(uint32_t now, bool all) {
     for (auto *l : this->listeners_)
       if (l->wants(u.src, u.topic, u.param))
         l->on_value(u.src, u.value);
+    // A new publisher of an instance-selected topic (say the second gas bottle)
+    // can shift which device is "1" and "2": re-publish those entities.
+    auto ip = this->instance_publishers_.find(u.topic);
+    if (ip != this->instance_publishers_.end()) {
+      const uint8_t count = this->count_publishers_(u.topic);
+      if (count != ip->second) {
+        ip->second = count;
+        for (auto *l : this->listeners_)
+          if (l->instance() != 0 && l->topic() == u.topic)
+            l->refresh();
+      }
+    }
   }
 }
 

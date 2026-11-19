@@ -27,6 +27,7 @@ CONF_TIME_SYNC = "time_sync"
 CONF_TOPIC = "topic"
 CONF_PARAM = "param"
 CONF_ADDRESS = "address"
+CONF_INSTANCE = "instance"
 
 truma_ns = cg.esphome_ns.namespace("truma_inetx")
 ble_client_base_ns = cg.esphome_ns.namespace("esp32_ble_client")
@@ -87,6 +88,9 @@ KEY_SCHEMA = HUB_SCHEMA.extend(
         cv.Required(CONF_PARAM): cv.string_strict,
         # 0 = whichever bus device publishes it (or the panel for RoomClimate)
         cv.Optional(CONF_ADDRESS, default=0): cv.hex_uint16_t,
+        # n-th device (ascending bus address) publishing the topic, e.g. the
+        # second Truma LevelControl. Takes the place of address.
+        cv.Optional(CONF_INSTANCE): cv.int_range(min=1, max=8),
     }
 )
 
@@ -95,6 +99,9 @@ OPTIONAL_KEY_SCHEMA = HUB_SCHEMA.extend(
         cv.Optional(CONF_TOPIC): cv.string_strict,
         cv.Optional(CONF_PARAM): cv.string_strict,
         cv.Optional(CONF_ADDRESS, default=0): cv.hex_uint16_t,
+        # n-th device (ascending bus address) publishing the topic, e.g. the
+        # second Truma LevelControl. Takes the place of address.
+        cv.Optional(CONF_INSTANCE): cv.int_range(min=1, max=8),
     }
 )
 
@@ -119,6 +126,8 @@ async def register_listener(var, config):
         cg.add(
             var.set_key(config[CONF_TOPIC], config[CONF_PARAM], config[CONF_ADDRESS])
         )
+        if CONF_INSTANCE in config:
+            cg.add(var.set_instance(config[CONF_INSTANCE]))
     cg.add(hub.register_listener(var))
     return hub
 
