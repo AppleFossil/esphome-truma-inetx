@@ -1,10 +1,17 @@
 # Changelog
 
+## 0.7.4
+- Gas bottles (Truma LevelControl, untested): the example YAML adds a device "Truma Gas" with
+  level (%), contents (kg) and bottle temperature (`GasBtl.FillLevelP`, `FillLevelW`,
+  `Temperature`), with names in `lang/de.yaml` and `lang/en.yaml`. Two bottles need an
+  `address:` per sensor (see README).
+- The log now shows the ESP-IDF version under the component version (helps with bug reports).
+- The example YAML loads component and language file from the tag `v0.7.4`.
+
 ## 0.7.3
 - ESPHome 2026.11 or later is required: from 2026.11 every sub-device needs `relation:`. The example
   YAML sets `relation: via` (heater, power system and panel are separate devices reached through
   the ESP), which keeps the existing device and entity IDs in Home Assistant.
-- The example YAML loads component and language file from the tag `v0.7.3`.
 
 ## 0.7.2
 - Reconnect after a link loss during login: the ESP-IDF Bluetooth stack can drop the panel key

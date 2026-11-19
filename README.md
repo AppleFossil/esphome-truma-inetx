@@ -8,7 +8,7 @@ the ESP via the ESPHome API over WiFi.
 
 No Home Assistant integration (`truma_inetx`) and no Bluetooth proxy needed.
 
-> **Status: public beta 0.7.3 (November 2026) – testers wanted!**
+> **Status: public beta 0.7.4 (November 2026) – testers wanted!**
 > Tested with an iNet X Pro panel (software 3.4.27), a Combi 6 heater and a Schaudt EBL.
 > With a **classic ESP32** (ESP32-D0WD) the connection is stable (long-term tests of 30 hours
 > and more). The ESP32-C3 is not supported, see [Hardware](#hardware).
@@ -206,6 +206,19 @@ How the thermostat entity works:
 - The current temperature is `AirHeating.Temp`.
 
 Writes go to the device that reports the value. Only `RoomClimate` goes to the panel.
+
+### Gas bottles (Truma LevelControl) – untested
+
+If a Truma LevelControl is registered at the iNet X panel (the level shows on the
+panel), the panel passes its values on and the example YAML shows them on a separate
+device "Truma Gas": level (%), contents (kg) and the bottle temperature. Without a
+LevelControl, delete the `truma_gas` device and the three gas sensors.
+
+With **two bottles** every sensor needs the bus address of its bottle
+(`address: 0x....`), otherwise the values jump between the bottles. Press
+"Dump all parameters", look for `GasBtl` in the log and copy the address of each
+bottle. Please report results (one or two bottles, do the values match the panel?)
+as an issue – nobody has tested this with the component yet.
 
 ### Custom actions in Home Assistant
 

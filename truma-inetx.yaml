@@ -12,7 +12,7 @@
 # alle Entitätsnamen, die Gerätenamen und die Statustexte um.
 
 packages:
-  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.7.3
+  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.7.4
   # Without GitHub access / ohne GitHub: put lang/de.yaml next to this file and use
   #   language: !include lang/de.yaml
 
@@ -32,6 +32,13 @@ esphome:
       relation: via
     - id: truma_panel
       name: "${truma_panel}"
+      relation: via
+    # Truma LevelControl gas bottle sensor(s). Without a LevelControl: delete this
+    # entry and the "Gas bottle" sensors at the end of "sensor:".
+    # Ohne LevelControl: diesen Eintrag und die Gasflaschen-Sensoren am Ende von
+    # "sensor:" löschen.
+    - id: truma_gas
+      name: "${truma_gas}"
       relation: via
 
 esp32:
@@ -61,7 +68,7 @@ captive_portal:
 
 # --- Truma iNet X ---------------------------------------------------------
 external_components:
-  - source: github://Moormerlander/esphome-truma-inetx@v0.7.3
+  - source: github://Moormerlander/esphome-truma-inetx@v0.7.4
     components: [truma_inetx]
   # Local instead of GitHub: put the "components" folder next to this file and use
   #   - source: { type: local, path: components }
@@ -474,6 +481,43 @@ sensor:
     name: "${wifi_signal}"
     update_interval: 60s
     entity_category: diagnostic
+
+  # --- Truma LevelControl (gas bottle) -------------------------------------
+  # Only if the LevelControl is registered at the iNet X panel (the level shows on
+  # the panel). One bottle: works without "address:". TWO bottles: give every
+  # sensor the bus address of its bottle (see "Dump all parameters" in the log),
+  # otherwise the values jump between the bottles.
+  # Nur wenn die LevelControl am Panel angemeldet ist. Bei ZWEI Flaschen braucht
+  # jeder Sensor die Busadresse seiner Flasche ("address:"), siehe README.
+  - platform: truma_inetx
+    topic: GasBtl
+    param: FillLevelP
+    name: "${gas_bottle_level}"
+    device_id: truma_gas
+    unit_of_measurement: "%"
+    icon: mdi:gas-cylinder
+    state_class: measurement
+    accuracy_decimals: 0
+  - platform: truma_inetx
+    topic: GasBtl
+    param: FillLevelW
+    name: "${gas_bottle_contents}"
+    device_id: truma_gas
+    unit_of_measurement: "kg"
+    device_class: weight
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - multiply: 0.1   # tenths of a kg on the wire
+  - platform: truma_inetx
+    topic: GasBtl
+    param: Temperature
+    name: "${gas_bottle_temperature}"
+    device_id: truma_gas
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 0   # whole degrees, unlike the heater's tenths
 
 number:
   - platform: truma_inetx

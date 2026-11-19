@@ -7,6 +7,7 @@
 
 #include <esp_attr.h>
 #include <esp_bt.h>
+#include <esp_idf_version.h>
 #include <mbedtls/aes.h>
 
 #include <cstdio>
@@ -239,6 +240,7 @@ void TrumaInetX::setup() {
 
 void TrumaInetX::dump_config() {
   ESP_LOGCONFIG(TAG, "Truma iNet X (direct BLE), version " TRUMA_INETX_VERSION ":");
+  ESP_LOGCONFIG(TAG, "  ESP-IDF: %s", esp_get_idf_version());
   ESP_LOGCONFIG(TAG, "  User name: %s", this->session_.identity.user_name.c_str());
   ESP_LOGCONFIG(TAG, "  App MUID: %s", this->session_.identity.muid.c_str());
   ESP_LOGCONFIG(TAG, "  Pairing window: %us", static_cast<unsigned>(this->pairing_timeout_ / 1000));

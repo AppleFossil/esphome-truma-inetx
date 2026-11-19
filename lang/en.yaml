@@ -71,3 +71,7 @@ substitutions:
   opt_fast: "Fast"
   opt_comfort: "Comfort"
   log_raw_messages: "Log Raw Messages (2 min)"
+  truma_gas: "Truma Gas"
+  gas_bottle_level: "Gas Bottle Level"
+  gas_bottle_contents: "Gas Bottle Contents"
+  gas_bottle_temperature: "Gas Bottle Temperature"

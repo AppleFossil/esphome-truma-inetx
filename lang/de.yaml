@@ -71,3 +71,7 @@ substitutions:
   opt_fast: "Schnell"
   opt_comfort: "Komfort"
   log_raw_messages: "Rohdaten ins Log (2 min)"
+  truma_gas: "Truma Gas"
+  gas_bottle_level: "Gasflasche Füllstand"
+  gas_bottle_contents: "Gasflasche Inhalt"
+  gas_bottle_temperature: "Gasflasche Temperatur"
