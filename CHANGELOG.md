@@ -1,12 +1,17 @@
 # Changelog
 
+## 0.7.3
+- ESPHome 2026.11 or later is required: from 2026.11 every sub-device needs `relation:`. The example
+  YAML sets `relation: via` (heater, power system and panel are separate devices reached through
+  the ESP), which keeps the existing device and entity IDs in Home Assistant.
+- The example YAML loads component and language file from the tag `v0.7.3`.
+
 ## 0.7.2
 - Reconnect after a link loss during login: the ESP-IDF Bluetooth stack can drop the panel key
   from RAM ("Deleting unpaired device"), although it is still in flash. The ESP then tried to
   pair from scratch and the panel refused ("pairing not supported", 0x52) until the ESP was
   restarted by hand. The ESP now restarts itself in this case (at most twice in a row) and
   reconnects with the stored key.
-- The example YAML loads component and language file from the tag `v0.7.2`.
 
 ## 0.7.1
 - Room, water and panel temperature no longer alternate. The heater and the panel send each

@@ -12,24 +12,27 @@
 # alle Entitätsnamen, die Gerätenamen und die Statustexte um.
 
 packages:
-  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.7.2
+  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.7.3
   # Without GitHub access / ohne GitHub: put lang/de.yaml next to this file and use
   #   language: !include lang/de.yaml
 
 esphome:
   name: truma-inetx
   friendly_name: Truma iNet X
-  min_version: 2025.11.0
+  min_version: 2026.11.0
 
   # Sub-devices: in Home Assistant the entities are split across these devices.
   # Everything without device_id stays on the ESP itself (connection & diagnostics).
   devices:
     - id: truma_heizung
       name: "${truma_heater}"
+      relation: via
     - id: truma_bordnetz
       name: "${truma_power}"
+      relation: via
     - id: truma_panel
       name: "${truma_panel}"
+      relation: via
 
 esp32:
   board: esp32dev          # classic ESP32 -- NOT C3/S3/C6, see README
@@ -58,7 +61,7 @@ captive_portal:
 
 # --- Truma iNet X ---------------------------------------------------------
 external_components:
-  - source: github://Moormerlander/esphome-truma-inetx@v0.7.2
+  - source: github://Moormerlander/esphome-truma-inetx@v0.7.3
     components: [truma_inetx]
   # Local instead of GitHub: put the "components" folder next to this file and use
   #   - source: { type: local, path: components }

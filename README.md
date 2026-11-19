@@ -8,7 +8,7 @@ the ESP via the ESPHome API over WiFi.
 
 No Home Assistant integration (`truma_inetx`) and no Bluetooth proxy needed.
 
-> **Status: public beta 0.7.2 (November 2026) – testers wanted!**
+> **Status: public beta 0.7.3 (November 2026) – testers wanted!**
 > Tested with an iNet X Pro panel (software 3.4.27), a Combi 6 heater and a Schaudt EBL.
 > With a **classic ESP32** (ESP32-D0WD) the connection is stable (long-term tests of 30 hours
 > and more). The ESP32-C3 is not supported, see [Hardware](#hardware).
@@ -21,7 +21,7 @@ No Home Assistant integration (`truma_inetx`) and no Bluetooth proxy needed.
 
 ### Requirements
 - A **classic ESP32**, e.g. "ESP32 DevKit" or "ESP32-WROOM-32". **Not** a C3, S3 or C6 (see [Hardware](#hardware)).
-- Home Assistant with the **ESPHome add-on** (ESPHome Builder), version 2025.11 or later.
+- Home Assistant with the **ESPHome add-on** (ESPHome Builder), version 2026.11 or later.
 - A USB cable and Chrome or Edge for the first flash.
 
 ### 1. Clean up

@@ -8,7 +8,7 @@ spricht nur noch per ESPHome-API über WLAN mit dem ESP.
 
 Damit entfallen die HA-Integration `truma_inetx` und der Bluetooth-Proxy.
 
-> **Status: öffentliche Beta 0.7.2 (November 2026) – Tester gesucht!**
+> **Status: öffentliche Beta 0.7.3 (November 2026) – Tester gesucht!**
 > Getestet an einem iNet X Pro Panel (Software 3.4.27) mit Combi 6 und Schaudt EBL. Mit einem
 > **klassischen ESP32** (ESP32-D0WD) läuft die Verbindung stabil (Langzeittests über 30 Stunden).
 > Der ESP32-C3 wird nicht unterstützt, siehe [Hardware](#hardware).
@@ -21,7 +21,7 @@ Damit entfallen die HA-Integration `truma_inetx` und der Bluetooth-Proxy.
 
 ### Voraussetzungen
 - Ein **klassischer ESP32**, z. B. „ESP32 DevKit“ oder „ESP32-WROOM-32“. **Kein** C3, S3 oder C6 (siehe [Hardware](#hardware)).
-- Home Assistant mit dem **ESPHome-Add-on** (ESPHome Builder), ab Version 2025.11.
+- Home Assistant mit dem **ESPHome-Add-on** (ESPHome Builder), ab Version 2026.11.
 - Ein USB-Kabel und für das erste Flashen Chrome oder Edge.
 
 ### 1. Aufräumen
