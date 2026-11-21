@@ -12,7 +12,7 @@
 # alle Entitätsnamen, die Gerätenamen und die Statustexte um.
 
 packages:
-  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.7.5
+  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.7.6
   # Without GitHub access / ohne GitHub: put lang/de.yaml next to this file and use
   #   language: !include lang/de.yaml
 
@@ -69,7 +69,7 @@ captive_portal:
 
 # --- Truma iNet X ---------------------------------------------------------
 external_components:
-  - source: github://Moormerlander/esphome-truma-inetx@v0.7.5
+  - source: github://Moormerlander/esphome-truma-inetx@v0.7.6
     components: [truma_inetx]
   # Local instead of GitHub: put the "components" folder next to this file and use
   #   - source: { type: local, path: components }
@@ -262,7 +262,7 @@ text_sensor:
     topic: GasBtl
     param: Name
     instance: 1
-    name: "${gas_label}"
+    name: "${gas_bottle_label}"
     device_id: truma_gas_1
     icon: mdi:label-outline
     entity_category: diagnostic
@@ -270,7 +270,7 @@ text_sensor:
     topic: GasBtl
     param: Name
     instance: 2
-    name: "${gas_label}"
+    name: "${gas_bottle_label}"
     device_id: truma_gas_2
     icon: mdi:label-outline
     entity_category: diagnostic
@@ -510,7 +510,7 @@ sensor:
     topic: GasBtl
     param: FillLevelP
     instance: 1
-    name: "${gas_level}"
+    name: "${gas_bottle_level}"
     device_id: truma_gas_1
     unit_of_measurement: "%"
     icon: mdi:gas-cylinder
@@ -520,7 +520,7 @@ sensor:
     topic: GasBtl
     param: FillLevelW
     instance: 1
-    name: "${gas_contents}"
+    name: "${gas_bottle_contents}"
     device_id: truma_gas_1
     unit_of_measurement: "kg"
     device_class: weight
@@ -532,7 +532,7 @@ sensor:
     topic: GasBtl
     param: Temperature
     instance: 1
-    name: "${gas_temperature}"
+    name: "${gas_bottle_temperature}"
     device_id: truma_gas_1
     unit_of_measurement: "°C"
     device_class: temperature
@@ -542,7 +542,7 @@ sensor:
     topic: GasBtl
     param: FillLevelP
     instance: 2
-    name: "${gas_level}"
+    name: "${gas_bottle_level}"
     device_id: truma_gas_2
     unit_of_measurement: "%"
     icon: mdi:gas-cylinder
@@ -552,7 +552,7 @@ sensor:
     topic: GasBtl
     param: FillLevelW
     instance: 2
-    name: "${gas_contents}"
+    name: "${gas_bottle_contents}"
     device_id: truma_gas_2
     unit_of_measurement: "kg"
     device_class: weight
@@ -564,7 +564,7 @@ sensor:
     topic: GasBtl
     param: Temperature
     instance: 2
-    name: "${gas_temperature}"
+    name: "${gas_bottle_temperature}"
     device_id: truma_gas_2
     unit_of_measurement: "°C"
     device_class: temperature
