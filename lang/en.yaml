@@ -77,3 +77,7 @@ substitutions:
   gas_bottle_contents: "Contents"
   gas_bottle_temperature: "Temperature"
   gas_bottle_label: "Label"
+  leisure_battery_soc: "Leisure Battery State of Charge"
+  leisure_battery_current: "Leisure Battery Current"
+  leisure_battery_capacity: "Leisure Battery Capacity"
+  n_dplus: "D+ (Engine Running)"

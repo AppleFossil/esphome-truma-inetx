@@ -12,7 +12,7 @@
 # alle Entitätsnamen, die Gerätenamen und die Statustexte um.
 
 packages:
-  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.7.6
+  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.7.7
   # Without GitHub access / ohne GitHub: put lang/de.yaml next to this file and use
   #   language: !include lang/de.yaml
 
@@ -69,7 +69,7 @@ captive_portal:
 
 # --- Truma iNet X ---------------------------------------------------------
 external_components:
-  - source: github://Moormerlander/esphome-truma-inetx@v0.7.6
+  - source: github://Moormerlander/esphome-truma-inetx@v0.7.7
     components: [truma_inetx]
   # Local instead of GitHub: put the "components" folder next to this file and use
   #   - source: { type: local, path: components }
@@ -89,6 +89,11 @@ truma_inetx:
   pairing_timeout: 120s
   language: ${language}
   privacy: false
+  # Panel refuses the ESP after every restart until it was without power
+  # (status 133 / 0x3e)? Test these, one at a time. / Lehnt das Panel den ESP
+  # nach jedem Neustart ab? Diese Schalter einzeln testen:
+  # startup_delay: 40s            # wait after boot / nach dem Start warten
+  # disconnect_on_shutdown: true  # disconnect cleanly before a restart
 
 binary_sensor:
   # --- Power distribution unit (EBL, 0x0405) ---
@@ -99,6 +104,13 @@ binary_sensor:
     name: "${n_12v_main_switch}"
     device_id: truma_bordnetz
     device_class: power
+  - platform: truma_inetx
+    topic: PowerSupply
+    param: DPlus
+    address: 0x0405
+    name: "${n_dplus}"
+    device_id: truma_bordnetz
+    device_class: running
   - platform: truma_inetx
     topic: PowerSupply
     param: 12VPower
@@ -369,6 +381,39 @@ sensor:
     accuracy_decimals: 1
     filters:
       - multiply: 0.1
+  # NE315 Gen2 and similar units (other units: stays "unknown")
+  - platform: truma_inetx
+    topic: L1Bat
+    param: SoC
+    address: 0x0405
+    name: "${leisure_battery_soc}"
+    device_id: truma_bordnetz
+    unit_of_measurement: "%"
+    device_class: battery
+    state_class: measurement
+    accuracy_decimals: 0
+  - platform: truma_inetx
+    topic: L1Bat
+    param: Current
+    address: 0x0405
+    name: "${leisure_battery_current}"
+    device_id: truma_bordnetz
+    unit_of_measurement: "A"
+    device_class: current
+    state_class: measurement
+    accuracy_decimals: 2
+    filters:
+      - multiply: 0.01   # + = charging / Laden
+  - platform: truma_inetx
+    topic: L1Bat
+    param: NomCapacity
+    address: 0x0405
+    name: "${leisure_battery_capacity}"
+    device_id: truma_bordnetz
+    unit_of_measurement: "Ah"
+    icon: mdi:battery-high
+    entity_category: diagnostic
+    accuracy_decimals: 0
   - platform: truma_inetx
     topic: FreshWater
     param: Level

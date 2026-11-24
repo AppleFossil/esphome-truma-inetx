@@ -77,3 +77,7 @@ substitutions:
   gas_bottle_contents: "Inhalt"
   gas_bottle_temperature: "Temperatur"
   gas_bottle_label: "Bezeichnung"
+  leisure_battery_soc: "Aufbaubatterie Ladezustand"
+  leisure_battery_current: "Aufbaubatterie Strom"
+  leisure_battery_capacity: "Aufbaubatterie Kapazität"
+  n_dplus: "D+ (Motor läuft)"

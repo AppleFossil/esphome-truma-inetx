@@ -95,6 +95,7 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   TrumaInetX();
 
   void setup() override;
+  void on_shutdown() override;
   void loop() override;
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::AFTER_BLUETOOTH; }
@@ -106,6 +107,10 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   void set_privacy(bool b) { this->privacy_ = b; }
   void set_german(bool b) { this->german_ = b; }
   void set_supervision_timeout(uint32_t ms) { this->supervision_timeout_ms_ = ms; }
+  // Test options (issue #1): wait after boot before the first connection, so the
+  // panel has dropped the old link; and disconnect cleanly before a restart.
+  void set_startup_delay(uint32_t ms) { this->startup_delay_ms_ = ms; }
+  void set_disconnect_on_shutdown(bool on) { this->disconnect_on_shutdown_ = on; }
   void set_time_sync(bool b) { this->time_sync_ = b; }
   // Write the Home Assistant time into the panel clock and check the result.
   void sync_panel_time();
@@ -222,6 +227,9 @@ class TrumaInetX : public Component, public truma_inetx_proto::TransportIO {
   bool privacy_{false};
   bool german_{false};
   uint32_t supervision_timeout_ms_{20000};
+  uint32_t startup_delay_ms_{0};
+  bool disconnect_on_shutdown_{false};
+  uint32_t last_startup_wait_log_{0};
   bool time_sync_{true};
   // Clock sync: check the panel's next "HH:MM" report after a write.
   uint32_t time_check_from_{0};

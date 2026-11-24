@@ -8,8 +8,9 @@ the ESP via the ESPHome API over WiFi.
 
 No Home Assistant integration (`truma_inetx`) and no Bluetooth proxy needed.
 
-> **Status: public beta 0.7.6 (November 2026) – testers wanted!**
-> Tested with an iNet X Pro panel (software 3.4.27), a Combi 6 heater and a Schaudt EBL.
+> **Status: public beta 0.7.7 (November 2026) – testers wanted!**
+> Tested with an iNet X Pro panel (software 3.4.27), a Combi 6 heater and a Schaudt EBL; by testers
+> also with panel software 3.5.38, Combi D 4 GEN2, Aventa compact and a Nordelettronica NE315 Gen2.
 > With a **classic ESP32** (ESP32-D0WD) the connection is stable (long-term tests of 30 hours
 > and more). The ESP32-C3 is not supported, see [Hardware](#hardware).
 >
@@ -177,7 +178,20 @@ truma_inetx:
   language: en              # en | de: language of status, "Last Disconnect" and timer texts
   supervision_timeout: 20s  # how long the link survives without hearing the panel (2-32 s)
   time_sync: true           # set the panel clock from time_id after connecting and daily
+  startup_delay: 0s         # test option: wait after boot before connecting (0-300 s)
+  disconnect_on_shutdown: false  # test option: disconnect cleanly before a planned restart
 ```
+
+**Panel refuses the ESP after every restart** (log: `status=133` or `0x3e`) until it was
+without power? Two test options, try them one at a time and report back:
+`startup_delay: 40s` waits after boot until the panel has surely dropped the old link
+(longer than `supervision_timeout`); `disconnect_on_shutdown: true` ends the link cleanly
+before an OTA update or a restart. On the author's panel (3.4.27) neither is needed.
+
+**Power distribution unit NE315 Gen2** (Nordelettronica, address 0x0405) also reports the
+leisure battery's state of charge (`L1Bat.SoC`, %), current (`L1Bat.Current`, 0.01 A,
++ = charging), nominal capacity (`L1Bat.NomCapacity`, Ah) and D+ (`PowerSupply.DPlus`). The
+example YAML has these; with other units they stay "unknown".
 
 The bus behind the panel is generic. Every value is a `topic` + `param` and comes from a
 device with a bus address (panel 0x0101, heater 0x0201, power distribution unit 0x04xx,

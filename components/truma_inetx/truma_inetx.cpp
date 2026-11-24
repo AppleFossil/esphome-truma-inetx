@@ -275,6 +275,10 @@ void TrumaInetX::setup() {
 void TrumaInetX::dump_config() {
   ESP_LOGCONFIG(TAG, "Truma iNet X (direct BLE), version " TRUMA_INETX_VERSION ":");
   ESP_LOGCONFIG(TAG, "  ESP-IDF: %s", esp_get_idf_version());
+  if (this->startup_delay_ms_ > 0)
+    ESP_LOGCONFIG(TAG, "  Startup delay: %u s", static_cast<unsigned>(this->startup_delay_ms_ / 1000));
+  if (this->disconnect_on_shutdown_)
+    ESP_LOGCONFIG(TAG, "  Disconnect on shutdown: YES");
   ESP_LOGCONFIG(TAG, "  User name: %s", this->session_.identity.user_name.c_str());
   ESP_LOGCONFIG(TAG, "  App MUID: %s", this->session_.identity.muid.c_str());
   ESP_LOGCONFIG(TAG, "  Pairing window: %us", static_cast<unsigned>(this->pairing_timeout_ / 1000));
@@ -607,6 +611,13 @@ bool TrumaInetX::accept_advertisement(const espbt::ESPBTDevice &device) {
                                 now - this->link_since_ > 1000)) {
         // backing off -- unless this is a different address than the one that
         // just failed, which is worth a try right away
+      } else if (now < this->startup_delay_ms_) {
+        // startup_delay: give the panel time to drop the link of before the restart
+        if (now - this->last_startup_wait_log_ > 10000 || this->last_startup_wait_log_ == 0) {
+          this->last_startup_wait_log_ = now;
+          ESP_LOGI(TAG, "Panel seen, waiting %u s after start before connecting (startup_delay)",
+                   static_cast<unsigned>((this->startup_delay_ms_ - now + 999) / 1000));
+        }
       } else {
         ok = true;
         ESP_LOGD(TAG, "Our panel advertises at %s (RSSI %d%s), connecting", addr_str(addr).c_str(), device.get_rssi(),
@@ -1052,6 +1063,16 @@ void TrumaInetX::write_panel_time_() {
 #else
   ESP_LOGW(TAG, "Panel clock: no time_id configured");
 #endif
+}
+
+void TrumaInetX::on_shutdown() {
+  if (!this->disconnect_on_shutdown_ || this->client_ == nullptr)
+    return;
+  if (this->link_ == Link::NO_BLE || this->link_ == Link::WAIT_ADV)
+    return;
+  ESP_LOGI(TAG, "Restart: disconnecting from the panel first (disconnect_on_shutdown)");
+  esp_ble_gap_disconnect(this->client_->get_remote_bda());
+  delay(300);  // let the controller send the disconnect before the radio goes down
 }
 
 void TrumaInetX::check_panel_time_(const truma_inetx_proto::CborValue &v) {

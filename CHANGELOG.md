@@ -1,12 +1,21 @@
 # Changelog
 
+## 0.7.7
+- Test options for panels that refuse the ESP after every restart until power-cycled (status 133 /
+  0x3e, issue #1): `startup_delay` waits after boot before the first connection, so the panel has
+  dropped the old link; `disconnect_on_shutdown` ends the link cleanly before a planned restart
+  (OTA, restart button). Both off by default; the example YAML lists them as comments.
+- Nordelettronica NE315 Gen2 (thanks to a tester): the example YAML adds leisure battery state of
+  charge (`L1Bat.SoC`), current (`L1Bat.Current`, 0.01 A, + = charging), nominal capacity
+  (`L1Bat.NomCapacity`) and D+ (`PowerSupply.DPlus`). Other units leave them "unknown".
+- The example YAML loads the tag `v0.7.7`.
+
 ## 0.7.6
 - Fix: `lang/de.yaml` and `lang/en.yaml` contained the key `gas_level` twice (heater gas stage
   and gas bottle level), so ESPHome 2026.11 rejected them ("Duplicate key"). The gas bottle
   names now use their own keys `gas_bottle_level`, `gas_bottle_contents`,
   `gas_bottle_temperature` and `gas_bottle_label`. Reported in issue #1 – thanks!
 - New check `tests/check_lang.py`: duplicate or missing keys in the language files.
-- The example YAML loads the tag `v0.7.6`.
 
 ## 0.7.5
 - Up to two gas bottles: new option `instance:` (1, 2, ...) for every entity. It picks the

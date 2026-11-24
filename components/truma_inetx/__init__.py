@@ -23,6 +23,8 @@ CONF_LOG_PARAMETERS = "log_parameters"
 CONF_PRIVACY = "privacy"
 CONF_LANGUAGE = "language"
 CONF_SUPERVISION_TIMEOUT = "supervision_timeout"
+CONF_STARTUP_DELAY = "startup_delay"
+CONF_DISCONNECT_ON_SHUTDOWN = "disconnect_on_shutdown"
 CONF_TIME_SYNC = "time_sync"
 CONF_TOPIC = "topic"
 CONF_PARAM = "param"
@@ -60,6 +62,14 @@ _SCHEMA = (
                 cv.positive_time_period_milliseconds,
                 cv.Range(min=cv.TimePeriod(seconds=2), max=cv.TimePeriod(seconds=32)),
             ),
+            # Test options for panels that refuse the ESP after a restart:
+            # wait this long after boot before connecting / disconnect
+            # cleanly before a planned restart (OTA, restart button).
+            cv.Optional(CONF_STARTUP_DELAY, default="0s"): cv.All(
+                cv.positive_time_period_milliseconds,
+                cv.Range(max=cv.TimePeriod(seconds=300)),
+            ),
+            cv.Optional(CONF_DISCONNECT_ON_SHUTDOWN, default=False): cv.boolean,
             cv.Optional(CONF_TIME_ID): cv.use_id(time_.RealTimeClock),
         }
     )
@@ -153,6 +163,8 @@ async def to_code(config):
     cg.add(var.set_privacy(config[CONF_PRIVACY]))
     cg.add(var.set_german(config[CONF_LANGUAGE] == "de"))
     cg.add(var.set_supervision_timeout(config[CONF_SUPERVISION_TIMEOUT]))
+    cg.add(var.set_startup_delay(config[CONF_STARTUP_DELAY]))
+    cg.add(var.set_disconnect_on_shutdown(config[CONF_DISCONNECT_ON_SHUTDOWN]))
     cg.add(var.set_time_sync(config[CONF_TIME_SYNC]))
     if CONF_TIME_ID in config:
         rtc = await cg.get_variable(config[CONF_TIME_ID])

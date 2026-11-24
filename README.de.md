@@ -8,8 +8,9 @@ spricht nur noch per ESPHome-API über WLAN mit dem ESP.
 
 Damit entfallen die HA-Integration `truma_inetx` und der Bluetooth-Proxy.
 
-> **Status: öffentliche Beta 0.7.6 (November 2026) – Tester gesucht!**
-> Getestet an einem iNet X Pro Panel (Software 3.4.27) mit Combi 6 und Schaudt EBL. Mit einem
+> **Status: öffentliche Beta 0.7.7 (November 2026) – Tester gesucht!**
+> Getestet an einem iNet X Pro Panel (Software 3.4.27) mit Combi 6 und Schaudt EBL, von Testern
+> auch mit Panel-Software 3.5.38, Combi D 4 GEN2, Aventa compact und Nordelettronica NE315 Gen2. Mit einem
 > **klassischen ESP32** (ESP32-D0WD) läuft die Verbindung stabil (Langzeittests über 30 Stunden).
 > Der ESP32-C3 wird nicht unterstützt, siehe [Hardware](#hardware).
 >
@@ -181,7 +182,21 @@ truma_inetx:
   language: de              # en | de: Sprache von Status, „Letzte Trennung“ und Zeitschaltuhren
   supervision_timeout: 20s  # so lange überlebt die Verbindung ohne Lebenszeichen vom Panel (2–32 s)
   time_sync: true           # Panel-Uhr nach dem Verbinden und täglich aus time_id stellen
+  startup_delay: 0s         # Testschalter: nach dem Start so lange mit dem Verbinden warten (0–300 s)
+  disconnect_on_shutdown: false  # Testschalter: vor einem geplanten Neustart sauber trennen
 ```
+
+**Panel lehnt den ESP nach jedem Neustart ab** (Log: `status=133` oder `0x3e`), bis es einmal
+stromlos war? Zwei Testschalter, bitte einzeln ausprobieren und berichten:
+`startup_delay: 40s` wartet nach dem Start, bis das Panel die alte Verbindung sicher
+aufgegeben hat (länger als `supervision_timeout`); `disconnect_on_shutdown: true` beendet die
+Verbindung vor einem OTA-Update oder Neustart sauber. Am Panel des Autors (3.4.27) ist keins
+von beiden nötig.
+
+**Elektroblock NE315 Gen2** (Nordelettronica, Adresse 0x0405) meldet zusätzlich Ladezustand
+(`L1Bat.SoC`, %), Strom (`L1Bat.Current`, 0,01 A, + = Laden) und Nennkapazität
+(`L1Bat.NomCapacity`, Ah) der Aufbaubatterie sowie D+ (`PowerSupply.DPlus`). Die
+Beispiel-YAML enthält diese Werte; bei anderen Geräten bleiben sie „Unbekannt“.
 
 Der Bus hinter dem Panel ist generisch. Jeder Wert ist `topic` + `param` und kommt von einem
 Gerät mit Busadresse (Panel 0x0101, Heizung 0x0201, Elektroblock 0x04xx, Gasflaschen 0x06xx …).
