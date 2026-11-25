@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1
+- Frost protection threshold can now be set from 0 °C (was 3 °C); default stays 5 °C.
+- The example YAML loads the tag `v0.8.1`.
+
 ## 0.8.0
 - Frost protection on the ESP, also without Home Assistant: new entities "Frost Protection"
   (switch, off by default in the example YAML), "Frost Protection Threshold" (3–10 °C, default
