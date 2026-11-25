@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.2
+- Shorter "Frost Protection Status" text so it fits a dashboard tile: `Ein 16:16 · 4.4 °C`
+  (EN: `On 16:16 · 4.4 °C`) instead of `25.11. 16:16: eingeschaltet bei 4.4 °C`. The date is
+  still visible in Home Assistant as the time the entity last changed.
+- The example YAML loads the tag `v0.8.2`.
+
 ## 0.8.1
 - Frost protection threshold can now be set from 0 °C (was 3 °C); default stays 5 °C.
 - The example YAML loads the tag `v0.8.1`.

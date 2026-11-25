@@ -12,7 +12,7 @@
 # alle Entitätsnamen, die Gerätenamen und die Statustexte um.
 
 packages:
-  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.8.1
+  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.8.2
   # Without GitHub access / ohne GitHub: put lang/de.yaml next to this file and use
   #   language: !include lang/de.yaml
 
@@ -69,7 +69,7 @@ captive_portal:
 
 # --- Truma iNet X ---------------------------------------------------------
 external_components:
-  - source: github://Moormerlander/esphome-truma-inetx@v0.8.1
+  - source: github://Moormerlander/esphome-truma-inetx@v0.8.2
     components: [truma_inetx]
   # Local instead of GitHub: put the "components" folder next to this file and use
   #   - source: { type: local, path: components }
@@ -786,8 +786,7 @@ interval:
           char buf[64];
           auto now = id(ha_time).now();
           if (now.is_valid())
-            snprintf(buf, sizeof(buf), "%02d.%02d. %02d:%02d: ${frost_switched_on} %.1f °C", now.day_of_month, now.month,
-                     now.hour, now.minute, t);
+            snprintf(buf, sizeof(buf), "${frost_switched_on} %02d:%02d · %.1f °C", now.hour, now.minute, t);
           else
-            snprintf(buf, sizeof(buf), "${frost_switched_on} %.1f °C", t);
+            snprintf(buf, sizeof(buf), "${frost_switched_on} · %.1f °C", t);
           id(frost_status).publish_state(buf);

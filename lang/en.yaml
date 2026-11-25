@@ -86,4 +86,4 @@ substitutions:
   frost_status: "Frost Protection Status"
   frost_ready: "Ready"
   frost_off: "Off"
-  frost_switched_on: "switched on at"
+  frost_switched_on: "On"
