@@ -12,7 +12,7 @@
 # alle Entitätsnamen, die Gerätenamen und die Statustexte um.
 
 packages:
-  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.7.7
+  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.7.8
   # Without GitHub access / ohne GitHub: put lang/de.yaml next to this file and use
   #   language: !include lang/de.yaml
 
@@ -69,7 +69,7 @@ captive_portal:
 
 # --- Truma iNet X ---------------------------------------------------------
 external_components:
-  - source: github://Moormerlander/esphome-truma-inetx@v0.7.7
+  - source: github://Moormerlander/esphome-truma-inetx@v0.7.8
     components: [truma_inetx]
   # Local instead of GitHub: put the "components" folder next to this file and use
   #   - source: { type: local, path: components }
@@ -89,11 +89,13 @@ truma_inetx:
   pairing_timeout: 120s
   language: ${language}
   privacy: false
-  # Panel refuses the ESP after every restart until it was without power
-  # (status 133 / 0x3e)? Test these, one at a time. / Lehnt das Panel den ESP
-  # nach jedem Neustart ab? Diese Schalter einzeln testen:
-  # startup_delay: 40s            # wait after boot / nach dem Start warten
-  # disconnect_on_shutdown: true  # disconnect cleanly before a restart
+  # After a restart the ESP waits supervision_timeout + 8 s before connecting,
+  # so the panel has dropped the old link (otherwise panel 3.5.x may refuse it
+  # until power-cycled). / Nach einem Neustart wartet der ESP, bis das Panel die
+  # alte Verbindung aufgegeben hat. Change / ändern:
+  # startup_delay: 40s
+  # Test option, so far not needed / Testschalter, bisher nicht nötig:
+  # disconnect_on_shutdown: true
 
 binary_sensor:
   # --- Power distribution unit (EBL, 0x0405) ---

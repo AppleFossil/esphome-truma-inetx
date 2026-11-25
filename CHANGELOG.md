@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.8
+- `startup_delay` is now on by default: after a restart the ESP waits `supervision_timeout` + 8 s
+  (28 s by default) before it connects. Until then the panel still holds the old link and refuses
+  a new one – with panel software 3.5.38 it then refused every attempt until power-cycled.
+  Confirmed by a tester (issue #1): with the wait the ESP reconnects after an OTA update by
+  itself. `startup_delay: 0s` turns it off.
+- `L1Bat.Current` (×0.01 A, + = charging) confirmed on a NE315 Gen2.
+- README: check "WiFi Signal" first on radio timeouts (better than −70 dBm).
+- The example YAML loads the tag `v0.7.8`.
+
 ## 0.7.7
 - Test options for panels that refuse the ESP after every restart until power-cycled (status 133 /
   0x3e, issue #1): `startup_delay` waits after boot before the first connection, so the panel has
@@ -8,7 +18,6 @@
 - Nordelettronica NE315 Gen2 (thanks to a tester): the example YAML adds leisure battery state of
   charge (`L1Bat.SoC`), current (`L1Bat.Current`, 0.01 A, + = charging), nominal capacity
   (`L1Bat.NomCapacity`) and D+ (`PowerSupply.DPlus`). Other units leave them "unknown".
-- The example YAML loads the tag `v0.7.7`.
 
 ## 0.7.6
 - Fix: `lang/de.yaml` and `lang/en.yaml` contained the key `gas_level` twice (heater gas stage

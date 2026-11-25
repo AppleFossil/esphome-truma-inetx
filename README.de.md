@@ -8,7 +8,7 @@ spricht nur noch per ESPHome-API über WLAN mit dem ESP.
 
 Damit entfallen die HA-Integration `truma_inetx` und der Bluetooth-Proxy.
 
-> **Status: öffentliche Beta 0.7.7 (November 2026) – Tester gesucht!**
+> **Status: öffentliche Beta 0.7.8 (November 2026) – Tester gesucht!**
 > Getestet an einem iNet X Pro Panel (Software 3.4.27) mit Combi 6 und Schaudt EBL, von Testern
 > auch mit Panel-Software 3.5.38, Combi D 4 GEN2, Aventa compact und Nordelettronica NE315 Gen2. Mit einem
 > **klassischen ESP32** (ESP32-D0WD) läuft die Verbindung stabil (Langzeittests über 30 Stunden).
@@ -182,16 +182,18 @@ truma_inetx:
   language: de              # en | de: Sprache von Status, „Letzte Trennung“ und Zeitschaltuhren
   supervision_timeout: 20s  # so lange überlebt die Verbindung ohne Lebenszeichen vom Panel (2–32 s)
   time_sync: true           # Panel-Uhr nach dem Verbinden und täglich aus time_id stellen
-  startup_delay: 0s         # Testschalter: nach dem Start so lange mit dem Verbinden warten (0–300 s)
+  startup_delay: 28s        # nach dem Start so lange mit dem Verbinden warten (Standard: supervision_timeout + 8 s)
   disconnect_on_shutdown: false  # Testschalter: vor einem geplanten Neustart sauber trennen
 ```
 
-**Panel lehnt den ESP nach jedem Neustart ab** (Log: `status=133` oder `0x3e`), bis es einmal
-stromlos war? Zwei Testschalter, bitte einzeln ausprobieren und berichten:
-`startup_delay: 40s` wartet nach dem Start, bis das Panel die alte Verbindung sicher
-aufgegeben hat (länger als `supervision_timeout`); `disconnect_on_shutdown: true` beendet die
-Verbindung vor einem OTA-Update oder Neustart sauber. Am Panel des Autors (3.4.27) ist keins
-von beiden nötig.
+**Nach einem Neustart wartet der ESP, bevor er sich verbindet** (`startup_delay`,
+standardmäßig `supervision_timeout` + 8 s, also 28 s). So lange hält das Panel noch die
+Verbindung von vor dem Neustart, und ein Verbindungsversuch wird abgelehnt (Log: `status=133`
+oder `0x3e`) – mit Panel-Software 3.5.38 lehnte das Panel danach jeden Versuch ab, bis es
+stromlos war. Von einem Tester bestätigt: Mit der Wartezeit verbindet sich der ESP nach einem
+OTA-Update von selbst wieder. `startup_delay: 0s` schaltet das ab.
+`disconnect_on_shutdown: true` (trennt vor einem Neustart sauber) bleibt als Testschalter;
+gebraucht wurde er bisher nicht.
 
 **Elektroblock NE315 Gen2** (Nordelettronica, Adresse 0x0405) meldet zusätzlich Ladezustand
 (`L1Bat.SoC`, %), Strom (`L1Bat.Current`, 0,01 A, + = Laden) und Nennkapazität
@@ -302,7 +304,9 @@ Was die Tests abdecken:
 - Log-Level `DEBUG` (oder `logs: { truma_inetx: VERBOSE }`). Der Sensor „Verbindungsstatus“
   zeigt die aktuelle Stufe.
 - „Letzte Trennung“ zeigt einen Funk-Timeout (0x08): Der ESP32 teilt sich ein Funkteil
-  zwischen WLAN und Bluetooth. Im Router einen **festen WLAN-Kanal** einstellen (automatische
+  zwischen WLAN und Bluetooth. **Zuerst „WLAN-Signal“ prüfen: besser als −70 dBm.** Ein Tester
+  hatte bei −81 dBm (4G-Router plus WireGuard) alle 1–2 Stunden einen Abbruch; mit starkem
+  Signal lief die Verbindung danach tagelang ohne Abbruch. Im Router einen **festen WLAN-Kanal** einstellen (automatische
   Kanalwechsel lassen den ESP neu suchen) oder ein ESP32-Board mit LAN verwenden
   (z. B. WT32-ETH01, Olimex ESP32-POE), dann hat Bluetooth das Funkteil für sich allein.
 - Dauerhaft Status 0x3E / `connect failed` nach einer Trennung oder nach dem Flashen:

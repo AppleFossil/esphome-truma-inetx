@@ -62,10 +62,11 @@ _SCHEMA = (
                 cv.positive_time_period_milliseconds,
                 cv.Range(min=cv.TimePeriod(seconds=2), max=cv.TimePeriod(seconds=32)),
             ),
-            # Test options for panels that refuse the ESP after a restart:
-            # wait this long after boot before connecting / disconnect
-            # cleanly before a planned restart (OTA, restart button).
-            cv.Optional(CONF_STARTUP_DELAY, default="0s"): cv.All(
+            # Wait this long after boot before connecting, so the panel has
+            # dropped the link from before the restart; and (test option)
+            # disconnect cleanly before a planned restart.
+            # Default: supervision_timeout + 8 s (see to_code).
+            cv.Optional(CONF_STARTUP_DELAY): cv.All(
                 cv.positive_time_period_milliseconds,
                 cv.Range(max=cv.TimePeriod(seconds=300)),
             ),
@@ -163,7 +164,14 @@ async def to_code(config):
     cg.add(var.set_privacy(config[CONF_PRIVACY]))
     cg.add(var.set_german(config[CONF_LANGUAGE] == "de"))
     cg.add(var.set_supervision_timeout(config[CONF_SUPERVISION_TIMEOUT]))
-    cg.add(var.set_startup_delay(config[CONF_STARTUP_DELAY]))
+    # After a restart the panel still holds the old link until the supervision
+    # timeout has run out; a connection attempt before that is refused and can
+    # leave the panel refusing until it is power-cycled (panel 3.5.x, issue #1).
+    if CONF_STARTUP_DELAY in config:
+        startup_delay = int(config[CONF_STARTUP_DELAY].total_milliseconds)
+    else:
+        startup_delay = int(config[CONF_SUPERVISION_TIMEOUT].total_milliseconds) + 8000
+    cg.add(var.set_startup_delay(startup_delay))
     cg.add(var.set_disconnect_on_shutdown(config[CONF_DISCONNECT_ON_SHUTDOWN]))
     cg.add(var.set_time_sync(config[CONF_TIME_SYNC]))
     if CONF_TIME_ID in config:

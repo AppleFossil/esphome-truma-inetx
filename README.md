@@ -8,7 +8,7 @@ the ESP via the ESPHome API over WiFi.
 
 No Home Assistant integration (`truma_inetx`) and no Bluetooth proxy needed.
 
-> **Status: public beta 0.7.7 (November 2026) – testers wanted!**
+> **Status: public beta 0.7.8 (November 2026) – testers wanted!**
 > Tested with an iNet X Pro panel (software 3.4.27), a Combi 6 heater and a Schaudt EBL; by testers
 > also with panel software 3.5.38, Combi D 4 GEN2, Aventa compact and a Nordelettronica NE315 Gen2.
 > With a **classic ESP32** (ESP32-D0WD) the connection is stable (long-term tests of 30 hours
@@ -178,15 +178,17 @@ truma_inetx:
   language: en              # en | de: language of status, "Last Disconnect" and timer texts
   supervision_timeout: 20s  # how long the link survives without hearing the panel (2-32 s)
   time_sync: true           # set the panel clock from time_id after connecting and daily
-  startup_delay: 0s         # test option: wait after boot before connecting (0-300 s)
+  startup_delay: 28s        # wait after boot before connecting (default: supervision_timeout + 8 s)
   disconnect_on_shutdown: false  # test option: disconnect cleanly before a planned restart
 ```
 
-**Panel refuses the ESP after every restart** (log: `status=133` or `0x3e`) until it was
-without power? Two test options, try them one at a time and report back:
-`startup_delay: 40s` waits after boot until the panel has surely dropped the old link
-(longer than `supervision_timeout`); `disconnect_on_shutdown: true` ends the link cleanly
-before an OTA update or a restart. On the author's panel (3.4.27) neither is needed.
+**After a restart the ESP waits before it connects** (`startup_delay`, by default
+`supervision_timeout` + 8 s, i.e. 28 s). Until then the panel still holds the link from before
+the restart, and a connection attempt is refused (log: `status=133` or `0x3e`) – with panel
+software 3.5.38 the panel then refused every attempt until it was without power. Confirmed by
+a tester: with the wait it reconnects after an OTA update by itself. `startup_delay: 0s` turns
+it off. `disconnect_on_shutdown: true` (ends the link cleanly before a restart) stays as a
+test option; so far it has not been needed.
 
 **Power distribution unit NE315 Gen2** (Nordelettronica, address 0x0405) also reports the
 leisure battery's state of charge (`L1Bat.SoC`, %), current (`L1Bat.Current`, 0.01 A,
@@ -295,7 +297,9 @@ What the tests cover:
 - Log level `DEBUG` (or `logs: { truma_inetx: VERBOSE }`). The sensor "Connection Status"
   shows the current stage.
 - "Last Disconnect" shows a radio timeout (0x08): the ESP32 shares one radio between WiFi
-  and Bluetooth. Set a **fixed WiFi channel** on your router (automatic channel changes make
+  and Bluetooth. **Check "WiFi Signal" first: it should be better than −70 dBm.** A tester
+  had drops every 1–2 hours at −81 dBm (4G router plus WireGuard); with a strong signal the
+  link then ran for days without a drop. Set a **fixed WiFi channel** on your router (automatic channel changes make
   the ESP rescan), or use an ESP32 board with Ethernet (e.g. WT32-ETH01, Olimex ESP32-POE)
   so Bluetooth has the radio to itself.
 - Permanent status 0x3E / `connect failed` after a disconnect or after flashing:
