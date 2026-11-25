@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0
+- Frost protection on the ESP, also without Home Assistant: new entities "Frost Protection"
+  (switch, off by default in the example YAML), "Frost Protection Threshold" (3–10 °C, default
+  5 °C) and "Frost Protection Status". With the heater off and the room temperature below the
+  threshold for 10 minutes, the ESP sets the heater to HEAT 5 °C. A heating set by hand is never
+  changed. Built in the example YAML (template switch/number/text sensor plus an interval).
+- The example YAML loads the tag `v0.8.0`.
+
 ## 0.7.8
 - `startup_delay` is now on by default: after a restart the ESP waits `supervision_timeout` + 8 s
   (28 s by default) before it connects. Until then the panel still holds the old link and refuses
@@ -8,7 +16,6 @@
   itself. `startup_delay: 0s` turns it off.
 - `L1Bat.Current` (×0.01 A, + = charging) confirmed on a NE315 Gen2.
 - README: check "WiFi Signal" first on radio timeouts (better than −70 dBm).
-- The example YAML loads the tag `v0.7.8`.
 
 ## 0.7.7
 - Test options for panels that refuse the ESP after every restart until power-cycled (status 133 /

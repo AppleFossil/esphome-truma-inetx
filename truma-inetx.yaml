@@ -12,7 +12,7 @@
 # alle Entitätsnamen, die Gerätenamen und die Statustexte um.
 
 packages:
-  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.7.8
+  language: github://Moormerlander/esphome-truma-inetx/lang/de.yaml@v0.8.0
   # Without GitHub access / ohne GitHub: put lang/de.yaml next to this file and use
   #   language: !include lang/de.yaml
 
@@ -69,7 +69,7 @@ captive_portal:
 
 # --- Truma iNet X ---------------------------------------------------------
 external_components:
-  - source: github://Moormerlander/esphome-truma-inetx@v0.7.8
+  - source: github://Moormerlander/esphome-truma-inetx@v0.8.0
     components: [truma_inetx]
   # Local instead of GitHub: put the "components" folder next to this file and use
   #   - source: { type: local, path: components }
@@ -152,6 +152,7 @@ binary_sensor:
     entity_category: diagnostic
   - platform: truma_inetx
     type: connected
+    id: panel_connected
     name: "${panel_connected}"
     device_class: connectivity
   - platform: truma_inetx
@@ -288,6 +289,12 @@ text_sensor:
     device_id: truma_gas_2
     icon: mdi:label-outline
     entity_category: diagnostic
+  - platform: template
+    id: frost_status
+    name: "${frost_status}"
+    device_id: truma_heizung
+    icon: mdi:snowflake-alert
+    entity_category: diagnostic
 
 button:
   - platform: truma_inetx
@@ -329,6 +336,7 @@ button:
 
 climate:
   - platform: truma_inetx
+    id: truma_climate
     name: "${heater}"
     device_id: truma_heizung
     supported_modes: [HEAT, FAN_ONLY]
@@ -338,6 +346,7 @@ sensor:
   - platform: truma_inetx
     topic: AirHeating
     param: Temp
+    id: room_temp
     address: 0x0201
     name: "${room_temperature}"
     device_id: truma_heizung
@@ -660,6 +669,20 @@ number:
     min_value: 0
     max_value: 10
     step: 1
+  - platform: template
+    id: frost_threshold
+    name: "${frost_threshold}"
+    device_id: truma_heizung
+    icon: mdi:snowflake-thermometer
+    unit_of_measurement: "°C"
+    min_value: 3
+    max_value: 10
+    step: 0.5
+    initial_value: 5
+    restore_value: true
+    optimistic: true
+    mode: box
+    entity_category: config
 
 select:
   - platform: truma_inetx
@@ -708,3 +731,63 @@ switch:
     name: "${screensaver}"
     device_id: truma_panel
     entity_category: config
+  # Frost protection (runs on the ESP, also without Home Assistant)
+  - platform: template
+    id: frost_guard
+    name: "${frost_guard}"
+    device_id: truma_heizung
+    icon: mdi:snowflake-thermometer
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    entity_category: config
+    on_turn_on:
+      - text_sensor.template.publish:
+          id: frost_status
+          state: "${frost_ready}"
+    on_turn_off:
+      - text_sensor.template.publish:
+          id: frost_status
+          state: "${frost_off}"
+
+# ---------------------------------------------------------------------------
+# Frost protection / Frostschutz: if the heater is off and the room temperature
+# stays below the threshold for 10 minutes, the ESP sets the heater to HEAT 5 °C.
+# Works without Home Assistant (needs the panel link). Only acts while the heater
+# is off – a heating set by hand is never touched. Turn "${frost_guard}" off when the
+# vehicle is winterized and the heater is meant to stay off.
+# ---------------------------------------------------------------------------
+globals:
+  - id: frost_minutes
+    type: int
+    restore_value: no
+    initial_value: "0"
+
+interval:
+  - interval: 60s
+    then:
+      - lambda: |-
+          if (id(frost_status).state.empty())
+            id(frost_status).publish_state(id(frost_guard).state ? "${frost_ready}" : "${frost_off}");
+          const float t = id(room_temp).state;
+          const bool heater_off = id(truma_climate).mode == climate::CLIMATE_MODE_OFF;
+          if (!id(frost_guard).state || !id(panel_connected).state || std::isnan(t) || !heater_off ||
+              t >= id(frost_threshold).state) {
+            id(frost_minutes) = 0;
+            return;
+          }
+          if (++id(frost_minutes) < 10)
+            return;
+          id(frost_minutes) = 0;
+          ESP_LOGW("frost", "Frost protection: %.1f °C with the heater off -> HEAT 5 °C", t);
+          auto call = id(truma_climate).make_call();
+          call.set_mode(climate::CLIMATE_MODE_HEAT);
+          call.set_target_temperature(5.0f);
+          call.perform();
+          char buf[64];
+          auto now = id(ha_time).now();
+          if (now.is_valid())
+            snprintf(buf, sizeof(buf), "%02d.%02d. %02d:%02d: ${frost_switched_on} %.1f °C", now.day_of_month, now.month,
+                     now.hour, now.minute, t);
+          else
+            snprintf(buf, sizeof(buf), "${frost_switched_on} %.1f °C", t);
+          id(frost_status).publish_state(buf);

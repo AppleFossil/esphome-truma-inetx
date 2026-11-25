@@ -8,7 +8,7 @@ spricht nur noch per ESPHome-API über WLAN mit dem ESP.
 
 Damit entfallen die HA-Integration `truma_inetx` und der Bluetooth-Proxy.
 
-> **Status: öffentliche Beta 0.7.8 (November 2026) – Tester gesucht!**
+> **Status: öffentliche Beta 0.8.0 (November 2026) – Tester gesucht!**
 > Getestet an einem iNet X Pro Panel (Software 3.4.27) mit Combi 6 und Schaudt EBL, von Testern
 > auch mit Panel-Software 3.5.38, Combi D 4 GEN2, Aventa compact und Nordelettronica NE315 Gen2. Mit einem
 > **klassischen ESP32** (ESP32-D0WD) läuft die Verbindung stabil (Langzeittests über 30 Stunden).
@@ -226,6 +226,18 @@ Die Thermostat-Entität funktioniert so:
 - Die Isttemperatur ist `AirHeating.Temp`.
 
 Schreibzugriffe gehen an das Gerät, das den Wert meldet. Nur `RoomClimate` geht ans Panel.
+
+### Frostschutz
+
+Der ESP passt selbst auf Frost auf – auch wenn Home Assistant oder das WLAN ausfällt (er braucht
+nur die Verbindung zum Panel). Ist **„Frostschutz“** an, die Heizung aus und die Raumtemperatur
+10 Minuten lang unter der **„Frostschutz-Schwelle“** (Standard 5 °C), stellt er die Heizung auf
+**Heizen 5 °C** (der niedrigste Sollwert des Panels) und vermerkt das im **„Frostschutz Status“**.
+Eine von Hand eingestellte Heizung wird nie verändert. In der Beispiel-YAML standardmäßig aus.
+
+Beim Einwintern, wenn die Heizung aus bleiben soll, ausschalten. Warnen, wenn die Verbindung zum
+Panel, das Gas oder die Batterie ausfällt, kann der ESP nicht – das gehört in Home Assistant,
+z. B. eine Benachrichtigung, wenn „Panel verbunden“ 10 Minuten aus ist oder „Störung“ an.
 
 ### Gasflaschen (Truma LevelControl)
 
